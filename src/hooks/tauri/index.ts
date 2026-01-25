@@ -8,6 +8,7 @@
  * - backup: バックアップ操作（取得、復元）
  * - export: エクスポート操作（単一ファイル、ZIP）
  * - import: インポート操作（単一ファイル、ZIP）
+ * - template: カスタムテンプレート操作（CRUD）
  *
  * 型定義は @/types から取得してください。
  */
@@ -20,6 +21,8 @@ export type {
   ImportResult,
   FileExistsInfo,
   ZipFileInfo,
+  CustomTemplate,
+  SaveTemplateInput,
 } from '../../types'
 
 // ユーティリティ
@@ -56,3 +59,11 @@ export {
   previewZip,
   importZip,
 } from './import'
+
+// テンプレート操作
+export {
+  saveCustomTemplate,
+  getCustomTemplates,
+  getCustomTemplate,
+  deleteCustomTemplate,
+} from './template'

@@ -10,6 +10,7 @@
 //!   - `backup` - バックアップ操作（作成、復元、クリーンアップ）
 //!   - `export` - エクスポート操作（単体、ZIP一括）
 //!   - `import` - インポート操作（単体、ZIP復元）
+//!   - `template` - カスタムテンプレート操作（CRUD）
 //! - `error` - カスタムエラー型
 //! - `types` - 共通データ型
 //! - `utils` - ユーティリティ関数
@@ -42,6 +43,15 @@ use commands::{
     import_file,
     import_zip,
     preview_zip,
+    // template
+    delete_custom_template,
+    get_custom_template,
+    get_custom_templates,
+    save_custom_template,
+    // window
+    close_preview_window,
+    is_preview_window_open,
+    open_preview_window,
 };
 
 /// アプリケーションのエントリーポイント
@@ -75,6 +85,15 @@ pub fn run() {
             import_file,
             preview_zip,
             import_zip,
+            // テンプレート操作
+            save_custom_template,
+            get_custom_templates,
+            get_custom_template,
+            delete_custom_template,
+            // ウィンドウ操作
+            open_preview_window,
+            close_preview_window,
+            is_preview_window_open,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

@@ -27,4 +27,12 @@ export type {
 } from './validation'
 
 // テンプレート関連
-export type { TemplateCategory, TemplateField, Template } from './templates'
+export type {
+  TemplateCategory,
+  TemplateField,
+  Template,
+  CustomTemplate,
+  SaveTemplateInput,
+  UnifiedTemplate,
+} from './templates'
+export { isCustomTemplate } from './templates'
