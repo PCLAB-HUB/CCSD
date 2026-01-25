@@ -8,9 +8,15 @@
  */
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { emitTo } from '@tauri-apps/api/event'
+import { emitTo, listen, type EventTarget, type UnlistenFn } from '@tauri-apps/api/event'
 
 const PREVIEW_WINDOW_LABEL = 'preview'
+
+// Tauri v2: WebviewWindowターゲットを明示的に指定
+const PREVIEW_TARGET: EventTarget = {
+  kind: 'WebviewWindow',
+  label: PREVIEW_WINDOW_LABEL,
+}
 
 interface UsePreviewWindowOptions {
   content?: string
@@ -25,7 +31,54 @@ export function usePreviewWindow({
 }: UsePreviewWindowOptions) {
   const [isWindowOpen, setIsWindowOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const isPreviewReadyRef = useRef(false)
   const checkIntervalRef = useRef<number | null>(null)
+  const contentRef = useRef({ content, fileName, darkMode })
+  const pendingContentRef = useRef<{ content: string; fileName: string; darkMode: boolean } | null>(null)
+
+  // 最新のコンテンツ情報を保持
+  useEffect(() => {
+    contentRef.current = { content, fileName, darkMode }
+  }, [content, fileName, darkMode])
+
+  /**
+   * プレビューウィンドウからの準備完了通知をリッスン
+   */
+  useEffect(() => {
+    let unlisten: UnlistenFn | undefined
+
+    const setupListener = async () => {
+      try {
+        unlisten = await listen('preview-ready', async () => {
+          console.log('[usePreviewWindow] Preview window is ready')
+          isPreviewReadyRef.current = true
+
+          // 保留中のコンテンツがあれば送信
+          if (pendingContentRef.current) {
+            console.log('[usePreviewWindow] Sending pending content...')
+            try {
+              await emitTo(PREVIEW_TARGET, 'preview-content-update', pendingContentRef.current)
+              console.log('[usePreviewWindow] Content sent successfully')
+            } catch (error) {
+              console.error('[usePreviewWindow] Failed to send pending content:', error)
+            }
+            pendingContentRef.current = null
+          }
+        })
+        console.log('[usePreviewWindow] preview-ready listener setup complete')
+      } catch (error) {
+        console.error('[usePreviewWindow] Failed to setup preview-ready listener:', error)
+      }
+    }
+
+    setupListener()
+
+    return () => {
+      if (unlisten) {
+        unlisten()
+      }
+    }
+  }, [])
 
   /**
    * プレビューウィンドウを開く
@@ -33,20 +86,29 @@ export function usePreviewWindow({
   const openPreviewWindow = useCallback(async () => {
     try {
       setIsLoading(true)
+      isPreviewReadyRef.current = false
+
+      // コンテンツを保留（プレビューウィンドウの準備完了を待つ）
+      if (content) {
+        pendingContentRef.current = { content, fileName, darkMode }
+        console.log('[usePreviewWindow] Content queued for sending')
+      }
+
       await invoke('open_preview_window')
       setIsWindowOpen(true)
 
-      // ウィンドウが開いた後、少し待ってからコンテンツを送信
-      // emitToを使用してプレビューウィンドウに直接送信
+      // フォールバック: 2秒後にまだ準備完了していなければ強制送信
       setTimeout(async () => {
-        if (content) {
-          await emitTo(PREVIEW_WINDOW_LABEL, 'preview-content-update', {
-            content,
-            fileName,
-            darkMode,
-          })
+        if (pendingContentRef.current) {
+          console.log('[usePreviewWindow] Fallback: sending content after timeout')
+          try {
+            await emitTo(PREVIEW_TARGET, 'preview-content-update', pendingContentRef.current)
+          } catch (error) {
+            console.error('[usePreviewWindow] Fallback send failed:', error)
+          }
+          pendingContentRef.current = null
         }
-      }, 500) // ウィンドウの初期化を待つため、少し長めに設定
+      }, 2000)
     } catch (error) {
       console.error('Failed to open preview window:', error)
     } finally {
@@ -73,8 +135,8 @@ export function usePreviewWindow({
     if (!isWindowOpen) return
 
     try {
-      // emitToを使用してプレビューウィンドウに直接送信
-      await emitTo(PREVIEW_WINDOW_LABEL, 'preview-content-update', {
+      // Tauri v2: EventTargetを使用してプレビューウィンドウに直接送信
+      await emitTo(PREVIEW_TARGET, 'preview-content-update', {
         content: newContent,
         fileName: newFileName,
         darkMode,
@@ -91,8 +153,8 @@ export function usePreviewWindow({
     if (!isWindowOpen) return
 
     try {
-      // emitToを使用してプレビューウィンドウに直接送信
-      await emitTo(PREVIEW_WINDOW_LABEL, 'preview-darkmode-update', newDarkMode)
+      // Tauri v2: EventTargetを使用してプレビューウィンドウに直接送信
+      await emitTo(PREVIEW_TARGET, 'preview-darkmode-update', newDarkMode)
     } catch (error) {
       console.error('Failed to sync dark mode to preview window:', error)
     }

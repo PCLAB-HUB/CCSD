@@ -6,7 +6,7 @@
  * リアルタイムでプレビューを更新します。
  */
 import { FC, useState, useEffect, useCallback } from 'react'
-import { listen, UnlistenFn } from '@tauri-apps/api/event'
+import { listen, emit, UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import MarkdownPreview from './MarkdownPreview'
 
@@ -16,16 +16,33 @@ interface PreviewContent {
   darkMode: boolean
 }
 
+// システムのダークモード設定を検出
+const getSystemDarkMode = (): boolean => {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+  return false
+}
+
 const PreviewWindow: FC = () => {
   const [content, setContent] = useState<string>('')
   const [fileName, setFileName] = useState<string>('')
-  const [darkMode, setDarkMode] = useState<boolean>(false)
+  // システムのダークモード設定を初期値として使用
+  const [darkMode, setDarkMode] = useState<boolean>(getSystemDarkMode)
   const [isConnected, setIsConnected] = useState<boolean>(false)
 
   // デバッグ: コンポーネントのマウント確認
   useEffect(() => {
-    console.log('[PreviewWindow] Component mounted')
-    console.log('[PreviewWindow] Current pathname:', window.location.pathname)
+    console.log('[PreviewWindow] ========== PREVIEW WINDOW MOUNTED ==========')
+    console.log('[PreviewWindow] URL Debug:', {
+      href: window.location.href,
+      pathname: window.location.pathname,
+      origin: window.location.origin,
+      protocol: window.location.protocol,
+    })
+    console.log('[PreviewWindow] Document title:', document.title)
+    console.log('[PreviewWindow] Initial darkMode:', darkMode)
+    console.log('[PreviewWindow] System prefers dark:', getSystemDarkMode())
     return () => {
       console.log('[PreviewWindow] Component unmounted')
     }
@@ -34,6 +51,7 @@ const PreviewWindow: FC = () => {
   // コンテンツ更新イベントのリスナー
   useEffect(() => {
     let unlisten: UnlistenFn | undefined
+    let isMounted = true
 
     const setupListener = async () => {
       try {
@@ -50,6 +68,13 @@ const PreviewWindow: FC = () => {
           setIsConnected(true)
         })
         console.log('[PreviewWindow] Content listener setup complete')
+
+        // リスナー設定完了後、メインウィンドウに準備完了を通知
+        if (isMounted) {
+          console.log('[PreviewWindow] Emitting preview-ready event...')
+          await emit('preview-ready', { ready: true })
+          console.log('[PreviewWindow] preview-ready event emitted successfully')
+        }
       } catch (error) {
         console.error('[PreviewWindow] Failed to setup preview listener:', error)
       }
@@ -58,6 +83,7 @@ const PreviewWindow: FC = () => {
     setupListener()
 
     return () => {
+      isMounted = false
       if (unlisten) {
         console.log('[PreviewWindow] Cleaning up content listener')
         unlisten()
