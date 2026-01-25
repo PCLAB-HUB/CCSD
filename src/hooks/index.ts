@@ -30,6 +30,9 @@ export { useKeyboardShortcuts } from './useKeyboardShortcuts'
 // Markdownプレビュー
 export { useMarkdownPreview } from './useMarkdownPreview'
 
+// プレビューウィンドウ
+export { usePreviewWindow } from './usePreviewWindow'
+
 // インポート機能
 export { useImport } from './useImport'
 
@@ -38,6 +41,9 @@ export { useMonacoEditor } from './useMonacoEditor'
 
 // 検索ハイライト
 export { useSearchHighlight } from './useSearchHighlight'
+
+// 統計データ
+export { useStats } from './useStats'
 
 // 型のre-export（types/から一元管理）
 export type {
