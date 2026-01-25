@@ -6,6 +6,7 @@ import DiffModal, { DiffData } from './components/diff/DiffModal'
 import BackupList from './components/backup/BackupList'
 import TemplateSelector from './components/template/TemplateSelector'
 import CreateFromTemplateDialog from './components/template/CreateFromTemplateDialog'
+import ImportDialog from './components/import/ImportDialog'
 import { FileNode, FileContent, getFileTree, readFile, writeFile, searchFiles, isTauri, getBackupContent, createFile } from './hooks/useTauri'
 import { Template } from './data/templates'
 import { validateContent, type ValidationError } from './utils/validators'
@@ -51,6 +52,7 @@ function App() {
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
   const [showPreview, setShowPreview] = useState(false)
   const [scrollSync, setScrollSync] = useState(true)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
 
   // ダークモードの適用
   useEffect(() => {
@@ -410,7 +412,7 @@ function App() {
         onClearHighlight={handleClearHighlight}
         onOpenBackups={() => setBackupListOpen(true)}
         onCreateNew={() => setTemplateSelectorOpen(true)}
-        onOpenImport={() => {/* TODO: Import機能を実装 */}}
+        onOpenImport={() => setImportDialogOpen(true)}
         selectedFilePath={selectedFile?.path}
         selectedFileName={selectedFile?.name}
         isMarkdownFile={currentFileIsMarkdown}
@@ -481,6 +483,16 @@ function App() {
         }}
         onBack={handleBackToTemplateSelector}
         onCreate={handleCreateFromTemplate}
+      />
+
+      {/* Import Dialog */}
+      <ImportDialog
+        isOpen={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onImportComplete={() => {
+          loadFileTree()
+          setMessage({ type: 'success', text: 'インポートが完了しました' })
+        }}
       />
     </div>
   )

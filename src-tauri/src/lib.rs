@@ -440,6 +440,47 @@ fn is_excluded_path(path_str: &str) -> bool {
     })
 }
 
+/// 新規ファイル作成（ディレクトリも必要に応じて作成）
+#[tauri::command]
+fn create_file(path: String, content: String) -> Result<(), String> {
+    let claude_dir = get_claude_dir()?;
+
+    // パスを正規化（~/.claude/ で始まる場合は展開）
+    let path_buf = if path.starts_with("~/.claude/") {
+        claude_dir.join(path.strip_prefix("~/.claude/").unwrap())
+    } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
+        PathBuf::from(&path)
+    } else {
+        return Err("Access denied: only files in ~/.claude/ are allowed".to_string());
+    };
+
+    // セキュリティチェック: ~/.claude/ 配下のみ許可
+    if !path_buf.starts_with(&claude_dir) {
+        return Err("Access denied: only files in ~/.claude/ are allowed".to_string());
+    }
+
+    // ファイルが既に存在する場合はエラー
+    if path_buf.exists() {
+        return Err("File already exists. Use write_file to update existing files.".to_string());
+    }
+
+    // 親ディレクトリを作成
+    if let Some(parent) = path_buf.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+            info!("Created directory: {}", parent.display());
+        }
+    }
+
+    // ファイルを作成して書き込み
+    fs::write(&path_buf, content)
+        .map_err(|e| format!("Failed to create file: {}", e))?;
+
+    info!("Created new file: {}", path_buf.display());
+    Ok(())
+}
+
 #[tauri::command]
 fn search_files(query: String) -> Result<Vec<FileContent>, String> {
     let claude_dir = get_claude_dir()?;
@@ -998,6 +1039,7 @@ pub fn run() {
             get_file_tree,
             read_file,
             write_file,
+            create_file,
             create_backup,
             get_backups,
             restore_backup,
