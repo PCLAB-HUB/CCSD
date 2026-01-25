@@ -1,9 +1,10 @@
-import { memo, useState, useCallback, useId } from 'react'
+import { memo, useCallback, useId, useMemo } from 'react'
 import { StatCard, type StatIconVariant } from './StatCard'
 import { StatsMetaInfo } from './StatsMetaInfo'
+import type { Stats } from '../../types/stats'
 
 /**
- * 統計データの型定義
+ * 統計データの型定義（配列形式で渡す場合用）
  */
 export interface StatItem {
   /** 統計項目のキー（一意） */
@@ -21,22 +22,86 @@ export interface StatItem {
 }
 
 interface StatsPanelProps {
-  /** 統計データの配列 */
-  stats: StatItem[]
-  /** 最終更新日時 */
+  /** 統計データ（Stats型またはStatItem配列） */
+  stats: Stats | StatItem[]
+  /** パネルの折りたたみ状態（外部制御） */
+  isCollapsed?: boolean
+  /** 折りたたみ状態変更時のコールバック */
+  onToggleCollapse?: () => void
+  /** 最終更新日時（stats配列使用時） */
   lastUpdated?: Date | string | null
   /** 設定バージョン */
   configVersion?: string
-  /** パネルの折りたたみ可否 */
-  collapsible?: boolean
-  /** 初期の展開状態 */
-  defaultExpanded?: boolean
   /** ファイルツリーのID（スキップリンク用） */
   fileTreeId?: string
   /** 読み込み中状態 */
   loading?: boolean
   /** 追加のクラス名 */
   className?: string
+}
+
+/**
+ * Stats型からStatItem配列に変換するヘルパー関数
+ */
+function convertStatsToItems(stats: Stats): StatItem[] {
+  return [
+    {
+      key: 'subAgents',
+      label: 'サブエージェント',
+      value: stats.subAgentCount,
+      unit: '個',
+      iconVariant: 'files' as StatIconVariant,
+    },
+    {
+      key: 'categories',
+      label: 'カテゴリ',
+      value: stats.categoryCount,
+      unit: '個',
+      iconVariant: 'files' as StatIconVariant,
+    },
+    {
+      key: 'skills',
+      label: 'スキル',
+      value: stats.skillCount,
+      unit: '個',
+      iconVariant: 'lines' as StatIconVariant,
+    },
+    {
+      key: 'mcpServers',
+      label: 'MCPサーバー',
+      value: stats.mcpServerCount,
+      unit: '個',
+      iconVariant: 'size' as StatIconVariant,
+    },
+    {
+      key: 'plugins',
+      label: 'プラグイン',
+      value: stats.pluginCount,
+      unit: '個',
+      iconVariant: 'size' as StatIconVariant,
+    },
+    {
+      key: 'backups',
+      label: 'バックアップ',
+      value: stats.backupCount,
+      unit: '個',
+      iconVariant: 'files' as StatIconVariant,
+    },
+    {
+      key: 'totalFiles',
+      label: '総ファイル数',
+      value: stats.totalFileCount,
+      unit: '個',
+      iconVariant: 'files' as StatIconVariant,
+    },
+  ]
+}
+
+/**
+ * Stats型かStatItem配列かを判定する型ガード
+ */
+function isStatsType(stats: Stats | StatItem[]): stats is Stats {
+  return 'subAgentCount' in stats
 }
 
 /**
@@ -52,33 +117,44 @@ interface StatsPanelProps {
  */
 export const StatsPanel = memo<StatsPanelProps>(({
   stats,
-  lastUpdated,
+  isCollapsed = false,
+  onToggleCollapse,
+  lastUpdated: propLastUpdated,
   configVersion,
-  collapsible = false,
-  defaultExpanded = true,
   fileTreeId = 'file-tree',
   loading = false,
   className = '',
 }) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
+  // Stats型の場合は変換、配列の場合はそのまま使用
+  const { statItems, lastUpdated } = useMemo(() => {
+    if (isStatsType(stats)) {
+      return {
+        statItems: convertStatsToItems(stats),
+        lastUpdated: stats.lastUpdated ?? propLastUpdated,
+      }
+    }
+    return {
+      statItems: stats,
+      lastUpdated: propLastUpdated,
+    }
+  }, [stats, propLastUpdated])
+
+  // 折りたたみ機能が有効かどうか
+  const collapsible = !!onToggleCollapse
+  const isExpanded = !isCollapsed
 
   // ユニークIDを生成
   const panelId = useId()
   const contentId = `${panelId}-content`
   const headerId = `${panelId}-header`
 
-  // 折りたたみトグル
-  const toggleExpanded = useCallback(() => {
-    setIsExpanded(prev => !prev)
-  }, [])
-
   // キーボード操作ハンドラ
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (collapsible && (e.key === 'Enter' || e.key === ' ')) {
+    if (collapsible && onToggleCollapse && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault()
-      toggleExpanded()
+      onToggleCollapse()
     }
-  }, [collapsible, toggleExpanded])
+  }, [collapsible, onToggleCollapse])
 
   return (
     <section
@@ -106,7 +182,7 @@ export const StatsPanel = memo<StatsPanelProps>(({
         id={headerId}
         role={collapsible ? 'button' : undefined}
         tabIndex={collapsible ? 0 : undefined}
-        onClick={collapsible ? toggleExpanded : undefined}
+        onClick={collapsible ? onToggleCollapse : undefined}
         onKeyDown={collapsible ? handleKeyDown : undefined}
         aria-expanded={collapsible ? isExpanded : undefined}
         aria-controls={collapsible ? contentId : undefined}
@@ -206,7 +282,7 @@ export const StatsPanel = memo<StatsPanelProps>(({
             <>
               {/* 統計カードグリッド - 定義リスト構造 */}
               <dl className="grid grid-cols-2 gap-2">
-                {stats.map((stat) => (
+                {statItems.map((stat) => (
                   <StatCard
                     key={stat.key}
                     label={stat.label}
