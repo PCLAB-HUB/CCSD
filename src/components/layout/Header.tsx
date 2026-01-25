@@ -23,11 +23,17 @@ interface HeaderProps {
   message: { type: 'success' | 'error'; text: string } | null
   onOpenBackups: () => void
   onCreateNew: () => void
+  onOpenImport?: () => void
   searchHighlight?: SearchHighlight | null
   onSearchNavigate?: (direction: 'next' | 'prev') => void
   onClearHighlight?: () => void
   selectedFilePath?: string
   selectedFileName?: string
+  isMarkdownFile?: boolean
+  showPreview?: boolean
+  onTogglePreview?: () => void
+  scrollSync?: boolean
+  onToggleScrollSync?: () => void
 }
 
 const Header: FC<HeaderProps> = ({
@@ -45,11 +51,17 @@ const Header: FC<HeaderProps> = ({
   message,
   onOpenBackups,
   onCreateNew,
+  onOpenImport,
   searchHighlight,
   onSearchNavigate,
   onClearHighlight,
   selectedFilePath,
   selectedFileName,
+  isMarkdownFile = false,
+  showPreview = false,
+  onTogglePreview,
+  scrollSync = false,
+  onToggleScrollSync,
 }) => {
   const [showResults, setShowResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
@@ -196,6 +208,69 @@ const Header: FC<HeaderProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
           </svg>
           バックアップ
+        </button>
+
+        {/* Markdownプレビュートグル */}
+        {isMarkdownFile && (
+          <div className="flex items-center gap-1 border-l border-gray-300 dark:border-gray-600 pl-4">
+            <button
+              onClick={onTogglePreview}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${
+                showPreview
+                  ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+              }`}
+              title={showPreview ? 'プレビューを非表示' : 'プレビューを表示'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              {showPreview ? 'Preview' : 'Preview'}
+            </button>
+            {showPreview && (
+              <button
+                onClick={onToggleScrollSync}
+                className={`p-1.5 rounded-md transition-colors ${
+                  scrollSync
+                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                }`}
+                title={scrollSync ? 'スクロール同期を解除' : 'スクロール同期'}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* インポートボタン */}
+        <button
+          onClick={onOpenImport}
+          className="px-3 py-1.5 text-sm bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors flex items-center gap-2"
+          title="設定をインポート"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          インポート
         </button>
 
         {/* エクスポートメニュー */}

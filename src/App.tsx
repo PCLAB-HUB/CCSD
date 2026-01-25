@@ -9,6 +9,7 @@ import CreateFromTemplateDialog from './components/template/CreateFromTemplateDi
 import { FileNode, FileContent, getFileTree, readFile, writeFile, searchFiles, isTauri, getBackupContent, createFile } from './hooks/useTauri'
 import { Template } from './data/templates'
 import { validateContent, type ValidationError } from './utils/validators'
+import { isMarkdownFile } from './utils/markdownParser'
 
 export interface SelectedFile {
   path: string
@@ -48,6 +49,8 @@ function App() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
   const [backupListOpen, setBackupListOpen] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
+  const [showPreview, setShowPreview] = useState(false)
+  const [scrollSync, setScrollSync] = useState(true)
 
   // ダークモードの適用
   useEffect(() => {
@@ -384,6 +387,9 @@ function App() {
     ? selectedFile.content !== selectedFile.originalContent
     : false
 
+  // 現在のファイルがMarkdownかどうか
+  const currentFileIsMarkdown = selectedFile ? isMarkdownFile(selectedFile.name) : false
+
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Header
@@ -404,8 +410,14 @@ function App() {
         onClearHighlight={handleClearHighlight}
         onOpenBackups={() => setBackupListOpen(true)}
         onCreateNew={() => setTemplateSelectorOpen(true)}
+        onOpenImport={() => {/* TODO: Import機能を実装 */}}
         selectedFilePath={selectedFile?.path}
         selectedFileName={selectedFile?.name}
+        isMarkdownFile={currentFileIsMarkdown}
+        showPreview={showPreview}
+        onTogglePreview={() => setShowPreview(!showPreview)}
+        scrollSync={scrollSync}
+        onToggleScrollSync={() => setScrollSync(!scrollSync)}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -426,6 +438,10 @@ function App() {
           searchHighlight={searchHighlight}
           onSearchCountUpdate={handleSearchCountUpdate}
           onSearchNavigate={handleSearchNavigate}
+          validationErrors={validationErrors}
+          onValidationChange={handleValidationChange}
+          showPreview={showPreview}
+          scrollSync={scrollSync}
           onPreviewChanges={handlePreviewChanges}
           hasUnsavedChanges={hasUnsavedChanges}
           onCompareWithBackup={handleCompareWithBackup}
