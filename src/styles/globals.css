@@ -362,3 +362,129 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background-color: #6b7280; /* gray-500 */
 }
+
+/* ==========================================
+   Stats Panel - 統計パネルスタイル
+   ========================================== */
+
+/* 折りたたみアニメーション用コンテナ */
+.stats-panel-content {
+  overflow: hidden;
+  transition: max-height 300ms ease-in-out, opacity 200ms ease-in-out;
+}
+
+.stats-panel-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.stats-panel-content.expanded {
+  max-height: 500px; /* コンテンツに十分な高さ */
+  opacity: 1;
+}
+
+/* 統計カード */
+.stats-card {
+  @apply bg-gray-100 dark:bg-gray-800
+         border border-gray-200 dark:border-gray-700
+         rounded-lg p-4
+         transition-all duration-200 ease-in-out;
+}
+
+.stats-card:hover {
+  @apply shadow-md border-blue-400 dark:border-blue-500;
+  transform: scale(1.01);
+}
+
+.stats-card:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
+}
+
+/* 統計パネルヘッダー（折りたたみトグル） */
+.stats-panel-header {
+  @apply flex items-center justify-between
+         px-4 py-3
+         bg-gray-100 dark:bg-gray-800
+         border-t border-gray-200 dark:border-gray-700
+         cursor-pointer select-none
+         transition-colors duration-150;
+}
+
+.stats-panel-header:hover {
+  @apply bg-gray-200 dark:bg-gray-700;
+}
+
+.stats-panel-header:focus-visible {
+  @apply outline-none ring-2 ring-inset ring-blue-500;
+}
+
+/* 展開/折りたたみアイコン */
+.stats-chevron {
+  @apply w-4 h-4 transition-transform duration-300 ease-in-out;
+}
+
+.stats-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* 統計値表示 */
+.stats-value {
+  @apply text-2xl font-bold text-gray-900 dark:text-gray-100;
+  /*
+   * カウントアップアニメーション（将来拡張用）:
+   * - react-countup または framer-motion を使用
+   * - useEffect で値変更を検知してアニメーション開始
+   * - duration: 500ms, easing: easeOut
+   * 例: <CountUp end={value} duration={0.5} />
+   */
+}
+
+.stats-label {
+  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+}
+
+/* 統計アイコン */
+.stats-icon {
+  @apply w-8 h-8 p-1.5 rounded-lg;
+}
+
+.stats-icon-blue {
+  @apply bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400;
+}
+
+.stats-icon-green {
+  @apply bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400;
+}
+
+.stats-icon-yellow {
+  @apply bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400;
+}
+
+.stats-icon-red {
+  @apply bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400;
+}
+
+.stats-icon-purple {
+  @apply bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400;
+}
+
+/* 統計グリッドレイアウト */
+.stats-grid {
+  @apply grid gap-4 p-4;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+/* サブトルグロー効果（ホバー時） */
+.stats-card-glow:hover {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.dark .stats-card-glow:hover {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(59, 130, 246, 0.2);
+}
