@@ -1,15 +1,75 @@
 /**
- * 構文エラーの日本語メッセージ定義
+ * エラーメッセージの日本語メッセージ定義
  */
 
-export type ValidationSeverity = 'error' | 'warning' | 'info'
+import type { ValidationSeverity, ValidationError } from '../types'
 
-export interface ValidationError {
-  message: string
-  line: number
-  column: number
-  severity: ValidationSeverity
-  source: 'yaml' | 'json'
+export type { ValidationSeverity, ValidationError }
+
+// ============================================================
+// ファイル操作エラー
+// ============================================================
+
+// ファイル操作エラーパターンと日本語メッセージのマッピング
+const fileErrorPatterns: Array<{ pattern: RegExp; message: string }> = [
+  { pattern: /no such file or directory/i, message: 'ファイルまたはディレクトリが見つかりません' },
+  { pattern: /permission denied/i, message: 'アクセス権限がありません' },
+  { pattern: /file not found/i, message: 'ファイルが見つかりません' },
+  { pattern: /directory not found/i, message: 'ディレクトリが見つかりません' },
+  { pattern: /already exists/i, message: 'ファイルが既に存在します' },
+  { pattern: /is a directory/i, message: '指定されたパスはディレクトリです' },
+  { pattern: /not a directory/i, message: '指定されたパスはディレクトリではありません' },
+  { pattern: /disk full|no space left/i, message: 'ディスクの空き容量がありません' },
+  { pattern: /read-only file system/i, message: '読み取り専用のファイルシステムです' },
+  { pattern: /too many open files/i, message: '開いているファイルが多すぎます' },
+  { pattern: /file name too long/i, message: 'ファイル名が長すぎます' },
+  { pattern: /invalid argument/i, message: '無効な引数です' },
+  { pattern: /operation not permitted/i, message: '操作が許可されていません' },
+  { pattern: /resource busy/i, message: 'リソースが使用中です' },
+  { pattern: /io error/i, message: '入出力エラーが発生しました' },
+  { pattern: /interrupted/i, message: '操作が中断されました' },
+  { pattern: /would block/i, message: '操作がブロックされました' },
+  { pattern: /timed out/i, message: '操作がタイムアウトしました' },
+  { pattern: /connection refused/i, message: '接続が拒否されました' },
+  { pattern: /not running in tauri/i, message: 'Tauri環境で実行されていません' },
+]
+
+/**
+ * ファイル操作エラーメッセージを日本語に変換
+ * @param originalMessage - 元のエラーメッセージ
+ * @returns 日本語のエラーメッセージ
+ */
+export function translateFileError(originalMessage: string): string {
+  for (const { pattern, message } of fileErrorPatterns) {
+    if (pattern.test(originalMessage)) {
+      return message
+    }
+  }
+  return `ファイル操作エラー: ${originalMessage}`
+}
+
+/**
+ * Tauriコマンドエラーを操作別に日本語メッセージに変換
+ * @param command - Tauriコマンド名
+ * @param error - エラーオブジェクト
+ * @returns 日本語のエラーメッセージ
+ */
+export function translateTauriCommandError(command: string, error: unknown): string {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  const translatedError = translateFileError(errorMessage)
+
+  // コマンド別のコンテキストを追加
+  const commandContextMap: Record<string, string> = {
+    'get_file_tree': 'ファイルツリーの取得に失敗しました',
+    'read_file': 'ファイルの読み込みに失敗しました',
+    'write_file': 'ファイルの書き込みに失敗しました',
+    'create_file': 'ファイルの作成に失敗しました',
+    'search_files': 'ファイルの検索に失敗しました',
+    'search_and_replace_in_file': '検索・置換に失敗しました',
+  }
+
+  const context = commandContextMap[command] || `コマンド「${command}」の実行に失敗しました`
+  return `${context}: ${translatedError}`
 }
 
 // YAMLエラーパターンと日本語メッセージのマッピング
