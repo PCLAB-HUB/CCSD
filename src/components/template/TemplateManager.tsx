@@ -5,7 +5,9 @@ import {
   saveCustomTemplate,
   deleteCustomTemplate,
 } from '../../hooks/tauri'
-import Modal from '../common/Modal'
+import { Modal, LoadingSpinner, EmptyState } from '../common'
+import TemplateIcon from '../common/TemplateIcon'
+import { formatDate } from '../../utils/formatDate'
 import TemplateEditor from './TemplateEditor'
 
 interface TemplateManagerProps {
@@ -21,60 +23,6 @@ const categoryLabels: Record<string, string> = {
   agent: 'エージェント',
   skill: 'スキル',
   command: 'コマンド',
-}
-
-/** アイコンコンポーネント */
-const IconComponent: FC<{ icon: string; className?: string }> = ({ icon, className = 'w-5 h-5' }) => {
-  switch (icon) {
-    case 'robot':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-        </svg>
-      )
-    case 'code':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
-      )
-    case 'server':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-        </svg>
-      )
-    case 'lightning':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      )
-    case 'refresh':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      )
-    case 'git':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      )
-    case 'test':
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
-    default:
-      return (
-        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
-  }
 }
 
 const TemplateManager: FC<TemplateManagerProps> = ({
@@ -153,21 +101,6 @@ const TemplateManager: FC<TemplateManagerProps> = ({
     setEditorOpen(true)
   }, [])
 
-  // 日時フォーマット
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    } catch {
-      return dateStr
-    }
-  }
 
   return (
     <>
@@ -198,35 +131,22 @@ const TemplateManager: FC<TemplateManagerProps> = ({
           {/* テンプレート一覧 */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <svg className="animate-spin w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
+              <LoadingSpinner size="lg" label="テンプレートを読み込み中" />
             </div>
           ) : templates.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                カスタムテンプレートがありません
-              </p>
-              <button
-                onClick={handleCreate}
-                className="text-blue-500 hover:text-blue-600 text-sm font-medium"
-              >
-                最初のテンプレートを作成
-              </button>
-            </div>
+            <EmptyState
+              title="カスタムテンプレートがありません"
+              action={{ label: '最初のテンプレートを作成', onClick: handleCreate }}
+            />
           ) : (
             <div className="space-y-3 max-h-[50vh] overflow-y-auto">
               {templates.map((template) => (
                 <div
                   key={template.id}
-                  className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600"
+                  className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600"
                 >
                   <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg">
-                    <IconComponent icon={template.icon} />
+                    <TemplateIcon icon={template.icon} />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -241,7 +161,7 @@ const TemplateManager: FC<TemplateManagerProps> = ({
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                       {template.description}
                     </p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
                       <span>作成: {formatDate(template.createdAt)}</span>
                       {template.updatedAt && (
                         <span>更新: {formatDate(template.updatedAt)}</span>
@@ -253,7 +173,7 @@ const TemplateManager: FC<TemplateManagerProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEdit(template)}
-                      className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-md transition-colors"
+                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-md transition-colors"
                       title="編集"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +183,7 @@ const TemplateManager: FC<TemplateManagerProps> = ({
                     <button
                       onClick={() => setConfirmDelete(template)}
                       disabled={deleting === template.id}
-                      className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors disabled:opacity-50"
+                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors disabled:opacity-50"
                       title="削除"
                     >
                       {deleting === template.id ? (
@@ -341,7 +261,7 @@ const TemplateManager: FC<TemplateManagerProps> = ({
             <p className="text-sm text-gray-600 dark:text-gray-400">
               「<span className="font-medium text-gray-900 dark:text-white">{confirmDelete.name}</span>」を削除しますか？
             </p>
-            <p className="text-sm text-red-500 mt-2">
+            <p className="text-sm text-red-500 dark:text-red-400 mt-2">
               この操作は取り消せません。
             </p>
           </div>

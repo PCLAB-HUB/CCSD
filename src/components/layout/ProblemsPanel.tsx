@@ -60,11 +60,22 @@ const ProblemsPanel: FC<ProblemsPanelProps> = memo(({
     <div className="border-t border-gray-200 dark:border-gray-700">
       {/* Panel Header */}
       <div
-        className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 cursor-pointer select-none"
+        role="button"
+        tabIndex={0}
+        aria-expanded={showPanel}
+        aria-controls="problems-list"
+        aria-label={`問題パネル、${showPanel ? '展開中' : '折りたたみ中'}。エラー ${errorCounts.error}件、警告 ${errorCounts.warning}件、情報 ${errorCounts.info}件`}
+        className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
         onClick={handleTogglePanel}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            handleTogglePanel()
+          }
+        }}
       >
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">問題</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium" id="problems-panel-title">問題</span>
           <div className="flex items-center gap-2">
             {errorCounts.error > 0 && (
               <span className={`px-2 py-0.5 text-xs rounded-full ${severityStyles.error.badge}`}>
@@ -84,10 +95,11 @@ const ProblemsPanel: FC<ProblemsPanelProps> = memo(({
           </div>
         </div>
         <svg
-          className={`w-4 h-4 transition-transform ${showPanel ? 'rotate-180' : ''}`}
+          className={`size-4 transition-transform ${showPanel ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -95,17 +107,27 @@ const ProblemsPanel: FC<ProblemsPanelProps> = memo(({
 
       {/* Problems List */}
       {showPanel && (
-        <div className="max-h-48 overflow-y-auto bg-white dark:bg-gray-900">
+        <div id="problems-list" role="list" aria-label="問題一覧" className="max-h-48 overflow-y-auto bg-white dark:bg-gray-900">
           {errors.map((error, index) => {
             const styles = severityStyles[error.severity]
+            const severityLabel = error.severity === 'error' ? 'エラー' : error.severity === 'warning' ? '警告' : '情報'
             return (
               <div
                 key={index}
-                className={`flex items-start gap-3 px-4 py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0 cursor-pointer ${styles.row}`}
+                role="listitem"
+                tabIndex={0}
+                aria-label={`${severityLabel}: ${error.message}。行 ${error.line}, 列 ${error.column}`}
+                className={`flex items-start gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${styles.row}`}
                 onClick={() => handleErrorClick(error.line, error.column)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleErrorClick(error.line, error.column)
+                  }
+                }}
               >
-                <div className={`flex-shrink-0 mt-0.5 ${styles.icon}`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`flex-shrink-0 mt-0.5 ${styles.icon}`} aria-hidden="true">
+                  <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -116,6 +138,7 @@ const ProblemsPanel: FC<ProblemsPanelProps> = memo(({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm ${getSeverityColor(error.severity)}`}>
+                    <span className="sr-only">{severityLabel}: </span>
                     {error.message}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

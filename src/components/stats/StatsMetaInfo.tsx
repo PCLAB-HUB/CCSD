@@ -59,10 +59,10 @@ export const StatsMetaInfo = memo<StatsMetaInfoProps>(({
     >
       {/* 最終更新日時 */}
       {lastUpdated && (
-        <div className="flex items-center gap-1.5">
-          <dt className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <dt className="flex items-center gap-1.5">
             <svg
-              className="w-3.5 h-3.5"
+              className="size-3.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -87,10 +87,10 @@ export const StatsMetaInfo = memo<StatsMetaInfoProps>(({
 
       {/* 設定バージョン */}
       {configVersion && (
-        <div className="flex items-center gap-1.5">
-          <dt className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <dt className="flex items-center gap-1.5">
             <svg
-              className="w-3.5 h-3.5"
+              className="size-3.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
