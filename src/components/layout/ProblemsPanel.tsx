@@ -75,7 +75,7 @@ const ProblemsPanel: FC<ProblemsPanelProps> = memo(({
         }}
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium" id="problems-panel-title">問題</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300" id="problems-panel-title">問題</span>
           <div className="flex items-center gap-2">
             {errorCounts.error > 0 && (
               <span className={`px-2 py-0.5 text-xs rounded-full ${severityStyles.error.badge}`}>
@@ -95,7 +95,7 @@ const ProblemsPanel: FC<ProblemsPanelProps> = memo(({
           </div>
         </div>
         <svg
-          className={`size-4 transition-transform ${showPanel ? 'rotate-180' : ''}`}
+          className={`size-4 text-gray-600 dark:text-gray-400 transition-transform ${showPanel ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
