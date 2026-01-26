@@ -21,11 +21,11 @@
     --color-resizer: #d1d5db;
     --color-resizer-hover: #3b82f6;
 
-    /* 検索ハイライト */
-    --color-search-bg: rgba(255, 255, 0, 0.4);
-    --color-search-border: rgba(255, 200, 0, 0.6);
-    --color-search-current-bg: rgba(255, 153, 0, 0.6);
-    --color-search-current-border: #ff9900;
+    /* 検索ハイライト - より見やすい色 */
+    --color-search-bg: rgba(255, 237, 74, 0.65);
+    --color-search-border: rgba(255, 200, 0, 0.9);
+    --color-search-current-bg: rgba(255, 140, 0, 0.8);
+    --color-search-current-border: #ff6600;
 
     /* カードグロー効果 */
     --shadow-card-glow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
@@ -38,9 +38,11 @@
     --color-scrollbar-thumb: #4b5563;
     --color-scrollbar-thumb-hover: #6b7280;
     --color-resizer: #4b5563;
-    --color-search-bg: rgba(255, 255, 0, 0.3);
-    --color-search-border: rgba(255, 200, 0, 0.5);
-    --color-search-current-bg: rgba(255, 153, 0, 0.5);
+    /* ダークモード用 - 暗い背景でも目立つ色 */
+    --color-search-bg: rgba(255, 237, 74, 0.5);
+    --color-search-border: rgba(255, 215, 0, 0.8);
+    --color-search-current-bg: rgba(255, 140, 0, 0.7);
+    --color-search-current-border: #ff6600;
     --shadow-card-glow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
                         0 2px 4px -1px rgba(0, 0, 0, 0.2),
                         0 0 0 1px rgba(59, 130, 246, 0.2);
@@ -76,14 +78,22 @@
   /* 検索ハイライト (useSearchHighlight.ts - Monaco Editor用) */
   .search-highlight {
     background-color: var(--color-search-bg) !important;
-    border: 1px solid var(--color-search-border);
-    border-radius: 2px;
+    border: 2px solid var(--color-search-border);
+    border-radius: 3px;
+    box-shadow: 0 0 4px rgba(255, 200, 0, 0.5);
   }
 
   .search-highlight-current {
     background-color: var(--color-search-current-bg) !important;
-    border: 2px solid var(--color-search-current-border);
-    border-radius: 2px;
+    border: 3px solid var(--color-search-current-border);
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(255, 102, 0, 0.7), 0 0 2px rgba(255, 102, 0, 1);
+    animation: pulse-highlight 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-highlight {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 102, 0, 0.7), 0 0 2px rgba(255, 102, 0, 1); }
+    50% { box-shadow: 0 0 12px rgba(255, 102, 0, 0.9), 0 0 4px rgba(255, 102, 0, 1); }
   }
 
   /* ステータスバッジ (StatusBadges.tsx, ExportMenu.tsx) - 共通ベース + バリアント */
