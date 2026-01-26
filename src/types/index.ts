@@ -36,3 +36,31 @@ export type {
   UnifiedTemplate,
 } from './templates'
 export { isCustomTemplate } from './templates'
+
+// 統計関連
+export type { Stats, StatCardData, StatsPanelState } from './stats'
+
+// お気に入り関連
+export type { FavoriteItem, FavoritesData, FavoriteActions } from './favorites'
+
+// タブエディタ関連
+export type {
+  Tab,
+  TabPersistData,
+  TabEditorState,
+  TabEditorActions,
+  UseTabEditorReturn,
+} from './tabs'
+
+// AIレビュー関連
+export type {
+  SuggestionSeverity,
+  SuggestionCategory,
+  ReviewSuggestion,
+  ReviewScore,
+  AIReviewResult,
+  AIReviewStatus,
+  AIReviewError,
+  APIKeyModalState,
+} from './aiReview'
+export { CATEGORY_META, SEVERITY_META } from './aiReview'

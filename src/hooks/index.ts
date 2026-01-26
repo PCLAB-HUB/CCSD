@@ -45,6 +45,25 @@ export { useSearchHighlight } from './useSearchHighlight'
 // 統計データ
 export { useStats } from './useStats'
 
+// お気に入り機能
+export { useFavorites } from './useFavorites'
+
+// タブエディタ
+export { useTabEditor } from './useTabEditor'
+
+// ベストプラクティスリンター
+export { useLinter, lint } from './useLinter'
+export type {
+  LinterRule,
+  LinterIssue,
+  LinterResult,
+  LinterConfig,
+} from './useLinter'
+
+// AIレビュー機能
+export { useAIReview } from './useAIReview'
+export type { UseAIReviewReturn } from './useAIReview'
+
 // 型のre-export（types/から一元管理）
 export type {
   Message,
