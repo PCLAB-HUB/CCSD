@@ -152,7 +152,7 @@ pub fn read_file(path: String) -> AppResult<FileContent> {
 ///
 /// # Arguments
 ///
-/// * `path` - 書き込むファイルのパス
+/// * `path` - 書き込むファイルのパス（~/.claude/で始まる形式も可）
 /// * `content` - 書き込む内容
 ///
 /// # Security
@@ -161,14 +161,23 @@ pub fn read_file(path: String) -> AppResult<FileContent> {
 /// 書き込み前に自動的にバックアップが作成されます。
 #[tauri::command]
 pub fn write_file(path: String, content: String) -> AppResult<()> {
-    let path_buf = PathBuf::from(&path);
     let claude_dir = get_claude_dir().map_err(|e| e.to_string())?;
+
+    // パスを正規化（~/.claude/ プレフィックスをサポート）
+    let path_buf = if path.starts_with("~/.claude/") {
+        claude_dir.join(path.strip_prefix("~/.claude/").unwrap())
+    } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
+        PathBuf::from(&path)
+    } else {
+        PathBuf::from(&path)
+    };
 
     // セキュリティチェック
     validate_path_security(&path_buf, &claude_dir).map_err(|e| e.to_string())?;
 
-    // バックアップを作成
-    crate::commands::backup::create_backup(&path)?;
+    // バックアップを作成（元のパスではなく正規化されたパスを使用）
+    let normalized_path = path_buf.to_string_lossy().to_string();
+    crate::commands::backup::create_backup(&normalized_path)?;
 
     fs::write(&path_buf, content).map_err(|e| format!("Failed to write file: {e}"))
 }
