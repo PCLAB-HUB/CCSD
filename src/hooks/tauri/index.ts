@@ -67,3 +67,6 @@ export {
   getCustomTemplate,
   deleteCustomTemplate,
 } from './template'
+
+// お気に入り操作
+export { loadFavorites, saveFavorites } from './favorites'
