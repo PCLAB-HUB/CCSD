@@ -10,7 +10,7 @@
  * - Tauri経由でファイルに永続化（~/.claude/dashboard-favorites.json）
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { loadFavorites, saveFavorites } from "./tauri/favorites";
 import { isTauri } from "./useTauri";
 import type {
@@ -33,6 +33,8 @@ interface UseFavoritesReturn {
   loading: boolean;
   /** 保存中フラグ */
   saving: boolean;
+  /** 操作中フラグ（保存中の追加操作をブロック） */
+  isOperating: boolean;
   /** お気に入り数 */
   favoriteCount: number;
   /** お気に入りが空かどうか */
@@ -68,6 +70,20 @@ export function useFavorites({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // 操作中フラグ（非同期競合防止用）
+  const operationInProgressRef = useRef(false);
+  const [isOperating, setIsOperating] = useState(false);
+
+  // マウント状態を追跡（アンマウント後の状態更新を防止）
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // ============================================================
   // 初期化
   // ============================================================
@@ -100,6 +116,36 @@ export function useFavorites({
   // ============================================================
 
   /**
+   * 操作をロックして実行する（競合防止）
+   * @param operation - 実行する操作
+   * @returns 操作の結果
+   */
+  const withOperationLock = useCallback(
+    async <T>(operation: () => Promise<T>): Promise<T | null> => {
+      // 既に操作中の場合はブロック
+      if (operationInProgressRef.current) {
+        onError?.("操作中です。しばらくお待ちください");
+        return null;
+      }
+
+      operationInProgressRef.current = true;
+      if (isMountedRef.current) {
+        setIsOperating(true);
+      }
+
+      try {
+        return await operation();
+      } finally {
+        operationInProgressRef.current = false;
+        if (isMountedRef.current) {
+          setIsOperating(false);
+        }
+      }
+    },
+    [onError],
+  );
+
+  /**
    * お気に入りデータを保存する
    */
   const saveData = useCallback(
@@ -109,7 +155,9 @@ export function useFavorites({
         return true;
       }
 
-      setSaving(true);
+      if (isMountedRef.current) {
+        setSaving(true);
+      }
       try {
         const data: FavoritesData = {
           version: 1,
@@ -124,7 +172,9 @@ export function useFavorites({
         onError?.("お気に入りの保存に失敗しました");
         return false;
       } finally {
-        setSaving(false);
+        if (isMountedRef.current) {
+          setSaving(false);
+        }
       }
     },
     [onError],
@@ -150,100 +200,108 @@ export function useFavorites({
    * お気に入りを追加する
    * @param path - ファイルパス
    * @param name - ファイル名
-   * @returns 成功時true
+   * @returns 成功時true、ブロック時はnull
    */
   const addFavorite = useCallback(
     async (path: string, name: string): Promise<boolean> => {
-      // setFavoritesの関数型更新を使用してstale closureを回避
-      return new Promise((resolve) => {
-        setFavorites((currentFavorites) => {
-          // 既に登録済みの場合は何もしない
-          const alreadyExists = currentFavorites.some(
-            (item) => item.path === path,
-          );
-          if (alreadyExists) {
-            // 状態を変更せずに解決
-            resolve(true);
-            return currentFavorites;
-          }
-
-          // 新しいアイテムを作成（最後尾に追加）
-          const maxOrder =
-            currentFavorites.length > 0
-              ? Math.max(...currentFavorites.map((f) => f.order))
-              : -1;
-          const newItem: FavoriteItem = {
-            path,
-            name,
-            order: maxOrder + 1,
-            addedAt: new Date().toISOString(),
-          };
-
-          const newFavorites = [...currentFavorites, newItem];
-
-          // 非同期で保存（状態更新後に実行）
-          void (async () => {
-            const success = await saveData(newFavorites);
-            if (success) {
-              onSuccess?.("お気に入りに追加しました");
-            } else {
-              // 保存失敗時はロールバック
-              setFavorites(currentFavorites);
+      const result = await withOperationLock(async () => {
+        return new Promise<boolean>((resolve) => {
+          setFavorites((currentFavorites) => {
+            // 既に登録済みの場合は何もしない
+            const alreadyExists = currentFavorites.some(
+              (item) => item.path === path,
+            );
+            if (alreadyExists) {
+              // 状態を変更せずに解決
+              resolve(true);
+              return currentFavorites;
             }
-            resolve(success);
-          })();
 
-          return newFavorites;
+            // 新しいアイテムを作成（最後尾に追加）
+            const maxOrder =
+              currentFavorites.length > 0
+                ? Math.max(...currentFavorites.map((f) => f.order))
+                : -1;
+            const newItem: FavoriteItem = {
+              path,
+              name,
+              order: maxOrder + 1,
+              addedAt: new Date().toISOString(),
+            };
+
+            const newFavorites = [...currentFavorites, newItem];
+
+            // 非同期で保存（状態更新後に実行）
+            void (async () => {
+              const success = await saveData(newFavorites);
+              if (success) {
+                onSuccess?.("お気に入りに追加しました");
+              } else {
+                // 保存失敗時はロールバック
+                if (isMountedRef.current) {
+                  setFavorites(currentFavorites);
+                }
+              }
+              resolve(success);
+            })();
+
+            return newFavorites;
+          });
         });
       });
+      return result ?? false;
     },
-    [saveData, onSuccess],
+    [saveData, onSuccess, withOperationLock],
   );
 
   /**
    * お気に入りを削除する
    * @param path - ファイルパス
-   * @returns 成功時true
+   * @returns 成功時true、ブロック時はfalse
    */
   const removeFavorite = useCallback(
     async (path: string): Promise<boolean> => {
-      // setFavoritesの関数型更新を使用してstale closureを回避
-      return new Promise((resolve) => {
-        setFavorites((currentFavorites) => {
-          const index = currentFavorites.findIndex(
-            (item) => item.path === path,
-          );
-          if (index === -1) {
-            resolve(true);
-            return currentFavorites;
-          }
-
-          const newFavorites = currentFavorites.filter(
-            (item) => item.path !== path,
-          );
-          // orderを再計算
-          const reorderedFavorites = newFavorites.map((item, idx) => ({
-            ...item,
-            order: idx,
-          }));
-
-          // 非同期で保存（状態更新後に実行）
-          void (async () => {
-            const success = await saveData(reorderedFavorites);
-            if (success) {
-              onSuccess?.("お気に入りから削除しました");
-            } else {
-              // 保存失敗時はロールバック
-              setFavorites(currentFavorites);
+      const result = await withOperationLock(async () => {
+        return new Promise<boolean>((resolve) => {
+          setFavorites((currentFavorites) => {
+            const index = currentFavorites.findIndex(
+              (item) => item.path === path,
+            );
+            if (index === -1) {
+              resolve(true);
+              return currentFavorites;
             }
-            resolve(success);
-          })();
 
-          return reorderedFavorites;
+            const newFavorites = currentFavorites.filter(
+              (item) => item.path !== path,
+            );
+            // orderを再計算
+            const reorderedFavorites = newFavorites.map((item, idx) => ({
+              ...item,
+              order: idx,
+            }));
+
+            // 非同期で保存（状態更新後に実行）
+            void (async () => {
+              const success = await saveData(reorderedFavorites);
+              if (success) {
+                onSuccess?.("お気に入りから削除しました");
+              } else {
+                // 保存失敗時はロールバック
+                if (isMountedRef.current) {
+                  setFavorites(currentFavorites);
+                }
+              }
+              resolve(success);
+            })();
+
+            return reorderedFavorites;
+          });
         });
       });
+      return result ?? false;
     },
-    [saveData, onSuccess],
+    [saveData, onSuccess, withOperationLock],
   );
 
   /**
@@ -269,76 +327,84 @@ export function useFavorites({
    * お気に入りを並べ替える
    * @param startIndex - 移動元のインデックス
    * @param endIndex - 移動先のインデックス
-   * @returns 成功時true
+   * @returns 成功時true、ブロック時はfalse
    */
   const reorderFavorites = useCallback(
     async (startIndex: number, endIndex: number): Promise<boolean> => {
-      // setFavoritesの関数型更新を使用してstale closureを回避
-      return new Promise((resolve) => {
-        setFavorites((currentFavorites) => {
-          if (
-            startIndex < 0 ||
-            startIndex >= currentFavorites.length ||
-            endIndex < 0 ||
-            endIndex >= currentFavorites.length ||
-            startIndex === endIndex
-          ) {
-            resolve(false);
-            return currentFavorites;
-          }
-
-          // 配列を複製して並べ替え
-          const newFavorites = [...currentFavorites];
-          const [movedItem] = newFavorites.splice(startIndex, 1);
-          newFavorites.splice(endIndex, 0, movedItem);
-
-          // orderを再計算
-          const reorderedFavorites = newFavorites.map((item, idx) => ({
-            ...item,
-            order: idx,
-          }));
-
-          // 非同期で保存（状態更新後に実行）
-          void (async () => {
-            const success = await saveData(reorderedFavorites);
-            if (!success) {
-              // 保存失敗時はロールバック
-              setFavorites(currentFavorites);
+      const result = await withOperationLock(async () => {
+        return new Promise<boolean>((resolve) => {
+          setFavorites((currentFavorites) => {
+            if (
+              startIndex < 0 ||
+              startIndex >= currentFavorites.length ||
+              endIndex < 0 ||
+              endIndex >= currentFavorites.length ||
+              startIndex === endIndex
+            ) {
+              resolve(false);
+              return currentFavorites;
             }
-            resolve(success);
-          })();
 
-          return reorderedFavorites;
+            // 配列を複製して並べ替え
+            const newFavorites = [...currentFavorites];
+            const [movedItem] = newFavorites.splice(startIndex, 1);
+            newFavorites.splice(endIndex, 0, movedItem);
+
+            // orderを再計算
+            const reorderedFavorites = newFavorites.map((item, idx) => ({
+              ...item,
+              order: idx,
+            }));
+
+            // 非同期で保存（状態更新後に実行）
+            void (async () => {
+              const success = await saveData(reorderedFavorites);
+              if (!success) {
+                // 保存失敗時はロールバック
+                if (isMountedRef.current) {
+                  setFavorites(currentFavorites);
+                }
+              }
+              resolve(success);
+            })();
+
+            return reorderedFavorites;
+          });
         });
       });
+      return result ?? false;
     },
-    [saveData],
+    [saveData, withOperationLock],
   );
 
   /**
    * 全てのお気に入りをクリアする
-   * @returns 成功時true
+   * @returns 成功時true、ブロック時はfalse
    */
   const clearAllFavorites = useCallback(async (): Promise<boolean> => {
-    // setFavoritesの関数型更新を使用してstale closureを回避
-    return new Promise((resolve) => {
-      setFavorites((currentFavorites) => {
-        // 非同期で保存（状態更新後に実行）
-        void (async () => {
-          const success = await saveData([]);
-          if (success) {
-            onSuccess?.("全てのお気に入りを削除しました");
-          } else {
-            // 保存失敗時はロールバック
-            setFavorites(currentFavorites);
-          }
-          resolve(success);
-        })();
+    const result = await withOperationLock(async () => {
+      return new Promise<boolean>((resolve) => {
+        setFavorites((currentFavorites) => {
+          // 非同期で保存（状態更新後に実行）
+          void (async () => {
+            const success = await saveData([]);
+            if (success) {
+              onSuccess?.("全てのお気に入りを削除しました");
+            } else {
+              // 保存失敗時はロールバック
+              if (isMountedRef.current) {
+                setFavorites(currentFavorites);
+              }
+            }
+            resolve(success);
+          })();
 
-        return [];
+          return [];
+        });
       });
     });
-  }, [saveData, onSuccess]);
+    return result ?? false;
+  }, [saveData, onSuccess, withOperationLock]);
 
   // ============================================================
   // 派生データ
@@ -393,6 +459,7 @@ export function useFavorites({
     favorites,
     loading,
     saving,
+    isOperating,
     favoriteCount,
     isEmpty,
 
