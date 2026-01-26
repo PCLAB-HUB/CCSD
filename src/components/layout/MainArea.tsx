@@ -1,16 +1,26 @@
-import { FC, useMemo, memo, lazy, Suspense } from 'react'
+import { FC, useMemo, memo, lazy, Suspense, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
-import type { SelectedFile, SearchHighlight, ValidationError } from '../../types'
+import type { SelectedFile, SearchHighlight, ValidationError, Tab } from '../../types'
 import { countBySeverity, getSchemaTypeName, type SchemaFileType } from '../../utils/schemaValidators'
 import { useMonacoEditor } from '../../hooks/useMonacoEditor'
 import { useSearchHighlight } from '../../hooks/useSearchHighlight'
 import { isMarkdownFile } from '../../utils/markdownParser'
 import { Icon } from '../common'
+import { TabBar } from '../tabs'
+import type { EditorTab } from '../tabs/TabItem'
+import { LinterPanel } from '../linter'
+import type { LintMessageData } from '../linter/LintMessage'
 import ProblemsPanel from './ProblemsPanel'
 import StatusBar from './StatusBar'
 
 // MarkdownPreviewを遅延読み込み - Markdownファイルを開くまで不要
 const MarkdownPreview = lazy(() => import('../preview/MarkdownPreview'))
+
+/** リンター結果の型 */
+interface LinterResult {
+  messages: LintMessageData[]
+  enabled: boolean
+}
 
 interface MainAreaProps {
   selectedFile: SelectedFile | null
@@ -27,6 +37,16 @@ interface MainAreaProps {
   onPreviewChanges?: () => void
   hasUnsavedChanges?: boolean
   onCompareWithBackup?: (backupPath: string, originalPath: string, backupName: string) => void
+  // タブ関連のプロパティ
+  tabs?: Tab[]
+  activeTabId?: string
+  onSelectTab?: (tabId: string) => void
+  onCloseTab?: (tabId: string) => void
+  onReorderTabs?: (fromIndex: number, toIndex: number) => void
+  // リンター関連のプロパティ
+  linterEnabled?: boolean
+  linterResult?: LinterResult
+  onToggleLinter?: (enabled: boolean) => void
 }
 
 /** ファイル名から言語を判定 */
@@ -131,6 +151,16 @@ const MainArea: FC<MainAreaProps> = memo(({
   scrollSync = false,
   onPreviewChanges,
   hasUnsavedChanges,
+  // タブ関連
+  tabs,
+  activeTabId,
+  onSelectTab,
+  onCloseTab,
+  onReorderTabs,
+  // リンター関連
+  linterEnabled = false,
+  linterResult,
+  onToggleLinter,
 }) => {
   // Markdownファイルかどうかを判定
   const isMarkdown = selectedFile ? isMarkdownFile(selectedFile.name) : false
@@ -161,6 +191,46 @@ const MainArea: FC<MainAreaProps> = memo(({
     onSearchCountUpdate,
   })
 
+  // Tab[] を EditorTab[] に変換
+  const editorTabs = useMemo<EditorTab[]>(() => {
+    if (!tabs) return []
+    return tabs.map((tab) => ({
+      id: tab.id,
+      fileName: tab.name,
+      filePath: tab.path,
+      isDirty: tab.content !== tab.originalContent,
+      isActive: tab.id === activeTabId,
+    }))
+  }, [tabs, activeTabId])
+
+  // タブバーが使用可能かどうか
+  const hasTabBar = tabs && tabs.length > 0 && onSelectTab && onCloseTab && onReorderTabs
+
+  // タブの並び替えハンドラ（fromId, toId形式をfromIndex, toIndex形式に変換）
+  const handleReorderTabs = useCallback((fromId: string, toId: string) => {
+    if (!tabs || !onReorderTabs) return
+    const fromIndex = tabs.findIndex(tab => tab.id === fromId)
+    const toIndex = tabs.findIndex(tab => tab.id === toId)
+    if (fromIndex !== -1 && toIndex !== -1) {
+      onReorderTabs(fromIndex, toIndex)
+    }
+  }, [tabs, onReorderTabs])
+
+  // リンター結果のメッセージ
+  const linterMessages = useMemo(() => {
+    return linterResult?.messages ?? []
+  }, [linterResult])
+
+  // リンターのトグルハンドラ
+  const handleToggleLinter = useCallback((enabled: boolean) => {
+    onToggleLinter?.(enabled)
+  }, [onToggleLinter])
+
+  // リンターパネルの行ジャンプハンドラ
+  const handleLinterGoToLine = useCallback((line: number, column: number) => {
+    goToLine(line, column)
+  }, [goToLine])
+
   // 全エラーを統合（構文検証 + スキーマ検証）
   const allErrors = useMemo(() => {
     const errors = [...validationErrors]
@@ -182,11 +252,20 @@ const MainArea: FC<MainAreaProps> = memo(({
 
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
-      {/* ファイルタブ */}
-      <FileTab
-        selectedFile={selectedFile}
-        schemaType={schemaValidation?.schemaType}
-      />
+      {/* タブバー（タブが渡された場合）または既存のFileTab */}
+      {hasTabBar ? (
+        <TabBar
+          tabs={editorTabs}
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onReorderTabs={handleReorderTabs}
+        />
+      ) : (
+        <FileTab
+          selectedFile={selectedFile}
+          schemaType={schemaValidation?.schemaType}
+        />
+      )}
 
       {/* 読み取り専用バナー */}
       {readOnly && <ReadOnlyBanner />}
@@ -232,12 +311,25 @@ const MainArea: FC<MainAreaProps> = memo(({
         )}
       </div>
 
-      {/* 問題パネル */}
+      {/* 問題パネル（構文エラー + スキーマ検証）*/}
       <ProblemsPanel
         errors={allErrors}
         errorCounts={errorCounts}
         onGoToLine={goToLine}
       />
+
+      {/* リンターパネル（リンター結果がある場合のみ表示） */}
+      {onToggleLinter && (
+        <LinterPanel
+          messages={linterMessages}
+          enabled={linterEnabled}
+          onToggleEnabled={handleToggleLinter}
+          onGoToLine={handleLinterGoToLine}
+          title="ベストプラクティスチェック"
+          defaultExpanded={false}
+          maxHeight="max-h-48"
+        />
+      )}
 
       {/* ステータスバー */}
       <StatusBar
