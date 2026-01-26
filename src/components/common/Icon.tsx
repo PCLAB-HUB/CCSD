@@ -56,6 +56,7 @@ export type IconName =
   | 'replace'
   | 'replaceAll'
   | 'searchReplace'
+  | 'undo'
 
 interface IconProps {
   name: IconName
@@ -572,6 +573,14 @@ const iconPaths: Record<IconName, React.ReactNode> = {
         d="M6 18h10m0 0l-3-3m3 3l-3 3"
       />
     </>
+  ),
+  undo: (
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 10h10a5 5 0 0 1 5 5v2M3 10l5-5m-5 5l5 5"
+    />
   ),
 }
 

@@ -65,6 +65,12 @@ interface SearchReplacePanelProps {
   onReplaceAll: () => void
   /** エラーをクリア */
   onClearError?: () => void
+  /** 元に戻す */
+  onUndo?: () => void
+  /** 元に戻せるかどうか */
+  canUndo?: boolean
+  /** Undoヒストリーの件数 */
+  undoCount?: number
 }
 
 /**
@@ -123,6 +129,9 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
   onReplaceCurrent,
   onReplaceAll,
   onClearError,
+  onUndo,
+  canUndo = false,
+  undoCount = 0,
 }) => {
   // 置換パネルの展開状態
   const [isExpanded, setIsExpanded] = useState(false)
@@ -133,6 +142,9 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
   // 検索入力への参照
   const searchInputRef = useRef<HTMLInputElement>(null)
 
+  // パネル全体への参照（キーボードショートカット用）
+  const panelRef = useRef<HTMLDivElement>(null)
+
   // パネルが開いた時に検索入力にフォーカス
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
@@ -140,6 +152,28 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
       searchInputRef.current.select()
     }
   }, [isOpen])
+
+  // パネルフォーカス時のCtrl+Z / Cmd+Z でUndo実行
+  useEffect(() => {
+    if (!isOpen || !onUndo) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // パネル内にフォーカスがあるか確認
+      if (!panelRef.current?.contains(document.activeElement)) return
+
+      // Ctrl+Z (Windows/Linux) or Cmd+Z (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        if (canUndo) {
+          e.preventDefault()
+          e.stopPropagation()
+          onUndo()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onUndo, canUndo])
 
   // キーボードショートカットハンドラー
   const handleSearchKeyDown = useCallback(
@@ -204,6 +238,9 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
   // エラーがある場合は置換ボタンを無効化
   const hasError = !!error
 
+  // Undoヒント表示テキスト
+  const undoHintText = undoCount > 0 ? `${undoCount}件の操作を元に戻せます` : ''
+
   // パネルが閉じている場合は何も表示しない
   if (!isOpen) {
     return null
@@ -211,6 +248,7 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
 
   return (
     <div
+      ref={panelRef}
       className="flex flex-col bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm"
       role="search"
       aria-label="検索・置換パネル"
@@ -408,17 +446,40 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
                     '全て置換'
                   )}
                 </button>
+                {/* 元に戻すボタン */}
+                {onUndo && (
+                  <button
+                    type="button"
+                    onClick={onUndo}
+                    disabled={!canUndo || isReplacing}
+                    className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex items-center gap-1"
+                    title={`元に戻す (Ctrl+Z / Cmd+Z)${undoHintText ? ` - ${undoHintText}` : ''}`}
+                    aria-label="元に戻す"
+                  >
+                    <Icon name="undo" className="size-4" />
+                    <span>元に戻す</span>
+                  </button>
+                )}
               </div>
 
-              {/* オプションボタンの幅分のスペーサー */}
-              <div className="flex items-center gap-1 pl-2 border-l border-transparent">
-                <div className="w-[26px]" />
-                <div className="w-[26px]" />
-                <div className="w-[26px]" />
-              </div>
+              {/* Undoヒント表示 */}
+              {canUndo && undoHintText && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                  {undoHintText}
+                </span>
+              )}
 
-              {/* 閉じるボタンの幅分のスペーサー */}
-              <div className="w-[32px]" />
+              {/* オプションボタンの幅分のスペーサー（Undoボタンがない場合のみ） */}
+              {!onUndo && (
+                <div className="flex items-center gap-1 pl-2 border-l border-transparent">
+                  <div className="w-[26px]" />
+                  <div className="w-[26px]" />
+                  <div className="w-[26px]" />
+                </div>
+              )}
+
+              {/* 閉じるボタンの幅分のスペーサー（Undoボタンがない場合のみ） */}
+              {!onUndo && <div className="w-[32px]" />}
             </div>
           )}
 
