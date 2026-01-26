@@ -60,7 +60,8 @@ export function useSearchHighlight({
     const decorations: monaco.editor.IModelDeltaDecoration[] = matches.map((match, index) => ({
       range: match.range,
       options: {
-        className: index === searchHighlight.currentIndex
+        isWholeLine: false,
+        inlineClassName: index === searchHighlight.currentIndex
           ? 'search-highlight-current'
           : 'search-highlight',
         overviewRuler: {
