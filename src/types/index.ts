@@ -47,7 +47,7 @@ export type { FavoriteItem, FavoritesData, FavoriteActions } from './favorites'
 export type {
   Tab,
   TabPersistData,
-  TabEditorState,
+  TabState,
   TabEditorActions,
   UseTabEditorReturn,
 } from './tabs'
