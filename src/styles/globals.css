@@ -164,6 +164,16 @@
   .animate-modal-enter {
     animation: modal-enter 0.2s ease-out forwards;
   }
+
+  /* スクロールバー非表示 (TabBar.tsx) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }
 
 /* ==========================================
