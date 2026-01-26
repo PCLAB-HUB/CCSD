@@ -9,6 +9,9 @@ interface ToolbarButtonsProps {
   onOpenBackups: () => void
   onOpenImport?: () => void
 
+  // 検索＆置換
+  onOpenSearchReplace?: () => void
+
   // Markdownプレビュー
   isMarkdownFile: boolean
   showPreview: boolean
@@ -68,6 +71,7 @@ const ToolbarButtons: FC<ToolbarButtonsProps> = memo(({
   onCreateNew,
   onOpenBackups,
   onOpenImport,
+  onOpenSearchReplace,
   isMarkdownFile,
   showPreview,
   onTogglePreview,
@@ -167,6 +171,18 @@ const ToolbarButtons: FC<ToolbarButtonsProps> = memo(({
         <Icon name="upload" />
         インポート
       </button>
+
+      {/* 検索＆置換ボタン */}
+      {onOpenSearchReplace && (
+        <button
+          onClick={onOpenSearchReplace}
+          className={buttonStyles.iconHover}
+          title="検索＆置換 (⌘H)"
+          aria-label="検索＆置換"
+        >
+          <Icon name="searchReplace" className="size-5" />
+        </button>
+      )}
 
       {/* AIレビューボタン */}
       {onRunAIReview && (

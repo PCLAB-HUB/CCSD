@@ -35,6 +35,8 @@ interface HeaderProps {
   onOpenPreviewWindow?: () => void
   isPreviewWindowOpen?: boolean
   isPreviewWindowLoading?: boolean
+  // 検索＆置換
+  onOpenSearchReplace?: () => void
 }
 
 const Header = memo<HeaderProps>(({
@@ -66,6 +68,7 @@ const Header = memo<HeaderProps>(({
   onOpenPreviewWindow,
   isPreviewWindowOpen = false,
   isPreviewWindowLoading = false,
+  onOpenSearchReplace,
 }) => {
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -127,6 +130,7 @@ const Header = memo<HeaderProps>(({
           onCreateNew={onCreateNew}
           onOpenBackups={onOpenBackups}
           onOpenImport={onOpenImport}
+          onOpenSearchReplace={onOpenSearchReplace}
           isMarkdownFile={isMarkdownFile}
           showPreview={showPreview}
           onTogglePreview={onTogglePreview}

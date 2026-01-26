@@ -32,6 +32,7 @@ import {
   useTabEditor,
   useLinter,
   useAIReview,
+  useSearchReplace,
 } from './hooks'
 
 /**
@@ -75,6 +76,9 @@ function App() {
 
   // AIレビューパネルの表示状態
   const [isAIReviewPanelOpen, setIsAIReviewPanelOpen] = useState(false)
+
+  // 検索＆置換パネルの表示状態
+  const [isSearchReplacePanelOpen, setIsSearchReplacePanelOpen] = useState(false)
 
   // 折りたたみ状態が変更されたらlocalStorageに保存
   useEffect(() => {
@@ -202,7 +206,7 @@ function App() {
     onReloadFileTree: loadFileTree,
   })
 
-  // キーボードショートカット（Cmd+S / Ctrl+S で保存）
+  // キーボードショートカット（Cmd+S / Ctrl+S で保存）- 検索置換ショートカットは後で追加
   useKeyboardShortcuts({ onSave: saveFile })
 
   // 統計データ
@@ -325,6 +329,119 @@ function App() {
       updateTabContent(selectedFile.path, newContent)
     }
   }, [updateContent, updateTabContent, selectedFile])
+
+  // 検索＆置換機能（handleContentChangeが必要なため、ここで定義）
+  const {
+    searchQuery: replaceSearchQuery,
+    replaceText,
+    matches: replaceMatches,
+    currentMatchIndex: replaceCurrentIndex,
+    options: replaceOptions,
+    isReplacing,
+    setSearchQuery: setReplaceSearchQuery,
+    setReplaceText,
+    setOptions: setReplaceOptions,
+    findNext: replaceFindNext,
+    findPrev: replaceFindPrev,
+    replaceCurrent,
+    replaceAll,
+    // resetSearchReplaceは将来の拡張用に保持
+    reset: _resetSearchReplace,
+  } = useSearchReplace(
+    selectedFile?.content ?? '',
+    handleContentChange
+  )
+
+  // _resetSearchReplaceは将来の拡張で使用予定
+  void _resetSearchReplace
+
+  /**
+   * 置換実行後にファイルを自動保存するハンドラ（単一置換）
+   */
+  const handleReplaceCurrent = useCallback(async () => {
+    const result = replaceCurrent()
+    if (result.success && result.count > 0) {
+      // 置換成功時にファイルを保存
+      const saved = await saveFile()
+      if (saved) {
+        showSuccess('置換して保存しました')
+      } else {
+        showError('置換は完了しましたが、保存に失敗しました')
+      }
+    }
+  }, [replaceCurrent, saveFile, showSuccess, showError])
+
+  /**
+   * 全置換実行後にファイルを自動保存するハンドラ
+   */
+  const handleReplaceAll = useCallback(async () => {
+    const result = replaceAll()
+    if (result.success && result.count > 0) {
+      // 置換成功時にファイルを保存
+      const saved = await saveFile()
+      if (saved) {
+        showSuccess(`${result.count}件を置換して保存しました`)
+      } else {
+        showError('置換は完了しましたが、保存に失敗しました')
+      }
+    }
+  }, [replaceAll, saveFile, showSuccess, showError])
+
+  /**
+   * 検索＆置換パネルを開く
+   */
+  const handleOpenSearchReplace = useCallback(() => {
+    setIsSearchReplacePanelOpen(true)
+  }, [])
+
+  /**
+   * 検索＆置換パネルを閉じる
+   */
+  const handleCloseSearchReplace = useCallback(() => {
+    setIsSearchReplacePanelOpen(false)
+  }, [])
+
+  // 検索＆置換のキーボードショートカット（Cmd+H / Ctrl+H）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+H (Mac) or Ctrl+H (Windows) で検索＆置換を開く
+      if ((e.metaKey || e.ctrlKey) && e.key === 'h' && !e.shiftKey) {
+        e.preventDefault()
+        setIsSearchReplacePanelOpen(true)
+      }
+      // Cmd+Shift+H で全て置換
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'H') {
+        e.preventDefault()
+        if (isSearchReplacePanelOpen && replaceMatches.length > 0) {
+          void handleReplaceAll()
+        }
+      }
+      // Alt+C で大文字小文字区別をトグル
+      if (e.altKey && e.key === 'c' && !e.metaKey && !e.ctrlKey) {
+        if (isSearchReplacePanelOpen) {
+          e.preventDefault()
+          setReplaceOptions({ caseSensitive: !replaceOptions.caseSensitive })
+        }
+      }
+      // Alt+W で単語単位検索をトグル
+      if (e.altKey && e.key === 'w' && !e.metaKey && !e.ctrlKey) {
+        if (isSearchReplacePanelOpen) {
+          e.preventDefault()
+          setReplaceOptions({ wholeWord: !replaceOptions.wholeWord })
+        }
+      }
+      // Alt+R で正規表現をトグル
+      if (e.altKey && e.key === 'r' && !e.metaKey && !e.ctrlKey) {
+        if (isSearchReplacePanelOpen) {
+          e.preventDefault()
+          setReplaceOptions({ useRegex: !replaceOptions.useRegex })
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSearchReplacePanelOpen, replaceMatches.length, handleReplaceAll, replaceOptions, setReplaceOptions])
 
   /**
    * タブ選択時のハンドラ
@@ -483,6 +600,7 @@ function App() {
         onOpenPreviewWindow={openPreviewWindow}
         isPreviewWindowOpen={isPreviewWindowOpen}
         isPreviewWindowLoading={isPreviewWindowLoading}
+        onOpenSearchReplace={handleOpenSearchReplace}
       />
 
       {/* 統計パネル: ヘッダー直下に配置 */}
@@ -555,6 +673,22 @@ function App() {
               updateLinterConfig({ enabledCategories: [] })
             }
           }}
+          // 検索＆置換
+          isSearchReplacePanelOpen={isSearchReplacePanelOpen}
+          onCloseSearchReplace={handleCloseSearchReplace}
+          replaceSearchQuery={replaceSearchQuery}
+          replaceText={replaceText}
+          replaceMatches={replaceMatches}
+          replaceCurrentIndex={replaceCurrentIndex}
+          replaceOptions={replaceOptions}
+          isReplacing={isReplacing}
+          onReplaceSearchChange={setReplaceSearchQuery}
+          onReplaceTextChange={setReplaceText}
+          onReplaceOptionsChange={setReplaceOptions}
+          onReplaceFindNext={replaceFindNext}
+          onReplaceFindPrev={replaceFindPrev}
+          onReplaceCurrent={handleReplaceCurrent}
+          onReplaceAll={handleReplaceAll}
         />
       </div>
 

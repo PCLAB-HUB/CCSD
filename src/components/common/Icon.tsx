@@ -50,6 +50,12 @@ export type IconName =
   | 'star'
   | 'starFilled'
   | 'grip'
+  | 'caseSensitive'
+  | 'wholeWord'
+  | 'regex'
+  | 'replace'
+  | 'replaceAll'
+  | 'searchReplace'
 
 interface IconProps {
   name: IconName
@@ -468,6 +474,103 @@ const iconPaths: Record<IconName, React.ReactNode> = {
       <circle cx="15" cy="12" r="1.5" fill="currentColor" />
       <circle cx="9" cy="18" r="1.5" fill="currentColor" />
       <circle cx="15" cy="18" r="1.5" fill="currentColor" />
+    </>
+  ),
+  caseSensitive: (
+    <>
+      <text
+        x="3"
+        y="16"
+        fontSize="14"
+        fontWeight="bold"
+        fill="currentColor"
+        fontFamily="system-ui, sans-serif"
+      >
+        A
+      </text>
+      <text
+        x="12"
+        y="16"
+        fontSize="11"
+        fill="currentColor"
+        fontFamily="system-ui, sans-serif"
+      >
+        a
+      </text>
+    </>
+  ),
+  wholeWord: (
+    <>
+      <text
+        x="2"
+        y="16"
+        fontSize="13"
+        fontWeight="bold"
+        fill="currentColor"
+        fontFamily="system-ui, sans-serif"
+      >
+        Ab
+      </text>
+      <path
+        strokeLinecap="round"
+        strokeWidth={2}
+        d="M18 6v12"
+      />
+    </>
+  ),
+  regex: (
+    <text
+      x="3"
+      y="17"
+      fontSize="14"
+      fontWeight="bold"
+      fill="currentColor"
+      fontFamily="monospace"
+    >
+      .*
+    </text>
+  ),
+  replace: (
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 12h12m0 0l-4-4m4 4l-4 4"
+    />
+  ),
+  replaceAll: (
+    <>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 8h10m0 0l-3-3m3 3l-3 3"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 16h10m0 0l-3-3m3 3l-3 3"
+      />
+    </>
+  ),
+  searchReplace: (
+    <>
+      {/* 虫眼鏡 */}
+      <circle cx="10" cy="8" r="4" strokeWidth={2} />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 11l3 3"
+      />
+      {/* 置換矢印 */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18h10m0 0l-3-3m3 3l-3 3"
+      />
     </>
   ),
 }
