@@ -443,6 +443,30 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isSearchReplacePanelOpen, replaceMatches.length, handleReplaceAll, replaceOptions, setReplaceOptions])
 
+  // ========================================
+  // 検索＆置換パネルとエディタハイライトの同期
+  // ========================================
+
+  // 検索＆置換パネルの検索状態をsearchHighlightに同期
+  useEffect(() => {
+    if (isSearchReplacePanelOpen && replaceSearchQuery) {
+      // 検索＆置換パネルの検索をハイライトに反映
+      setHighlight(replaceSearchQuery)
+    } else if (!isSearchReplacePanelOpen) {
+      // パネルを閉じたらハイライトをクリア
+      clearHighlight()
+    }
+  }, [isSearchReplacePanelOpen, replaceSearchQuery, setHighlight, clearHighlight])
+
+  // 検索＆置換パネルのcurrentIndexをsearchHighlightに同期
+  useEffect(() => {
+    if (isSearchReplacePanelOpen && replaceMatches.length > 0) {
+      // replaceCurrentIndexの変更をsearchHighlightのナビゲーションに反映
+      // updateHighlightCountで総数を更新し、navigateHighlightで位置を同期
+      updateHighlightCount(replaceMatches.length)
+    }
+  }, [isSearchReplacePanelOpen, replaceMatches.length, replaceCurrentIndex, updateHighlightCount])
+
   /**
    * タブ選択時のハンドラ
    * タブを選択したときに対応するファイルを読み込む
