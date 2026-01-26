@@ -1,6 +1,7 @@
 import { FC, memo } from 'react'
 import Icon from '../common/Icon'
 import ExportMenu from '../export/ExportMenu'
+import { AIReviewButton } from '../aiReview'
 
 interface ToolbarButtonsProps {
   // 新規作成・バックアップ
@@ -36,6 +37,12 @@ interface ToolbarButtonsProps {
   // ダークモード
   darkMode: boolean
   onToggleDarkMode: () => void
+
+  // AIレビュー
+  onRunAIReview?: () => void
+  aiReviewLoading?: boolean
+  aiReviewHasResults?: boolean
+  aiReviewSuggestionCount?: number
 }
 
 /** ボタンスタイルの定義 */
@@ -78,6 +85,10 @@ const ToolbarButtons: FC<ToolbarButtonsProps> = memo(({
   onToggleReadOnly,
   darkMode,
   onToggleDarkMode,
+  onRunAIReview,
+  aiReviewLoading = false,
+  aiReviewHasResults = false,
+  aiReviewSuggestionCount = 0,
 }) => {
   return (
     <>
@@ -156,6 +167,18 @@ const ToolbarButtons: FC<ToolbarButtonsProps> = memo(({
         <Icon name="upload" />
         インポート
       </button>
+
+      {/* AIレビューボタン */}
+      {onRunAIReview && (
+        <div className="border-l border-gray-300 dark:border-gray-600 pl-4">
+          <AIReviewButton
+            onClick={onRunAIReview}
+            isLoading={aiReviewLoading}
+            hasResults={aiReviewHasResults}
+            suggestionCount={aiReviewSuggestionCount}
+          />
+        </div>
+      )}
 
       {/* エクスポートメニュー */}
       <ExportMenu
