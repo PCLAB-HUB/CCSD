@@ -5,6 +5,7 @@
  * - APIキー管理（環境変数またはユーザー入力）
  * - レビュー結果のパースと構造化
  * - ローディング状態とエラーハンドリング
+ * - 型安全なAPIレスポンス検証
  */
 
 import { useState, useCallback, useMemo } from 'react'
@@ -17,6 +18,90 @@ import type {
   ReviewScore,
 } from '../types/aiReview'
 import { REVIEW_SYSTEM_PROMPT, createReviewUserPrompt } from '../utils/aiReviewPrompt'
+
+// ============================================================
+// APIレスポンス型定義
+// ============================================================
+
+/**
+ * Claude APIのコンテンツブロック型
+ */
+interface ClaudeContentBlock {
+  type: string
+  text?: string
+}
+
+/**
+ * Claude APIのレスポンス型
+ */
+interface ClaudeAPIResponse {
+  content?: ClaudeContentBlock[]
+  error?: {
+    message?: string
+    type?: string
+  }
+}
+
+/**
+ * Claude APIのエラーレスポンス型
+ */
+interface ClaudeAPIErrorResponse {
+  error?: {
+    message?: string
+    type?: string
+  }
+}
+
+// ============================================================
+// 型ガード関数
+// ============================================================
+
+/**
+ * ClaudeAPIResponseの型ガード
+ */
+function isClaudeAPIResponse(data: unknown): data is ClaudeAPIResponse {
+  if (typeof data !== 'object' || data === null) {
+    return false
+  }
+  const obj = data as Record<string, unknown>
+  // contentが存在する場合は配列であることを確認
+  if ('content' in obj) {
+    if (!Array.isArray(obj.content)) {
+      return false
+    }
+    // 各コンテンツブロックの型を確認
+    return obj.content.every((item: unknown) => {
+      if (typeof item !== 'object' || item === null) {
+        return false
+      }
+      const block = item as Record<string, unknown>
+      return typeof block.type === 'string'
+    })
+  }
+  return true
+}
+
+/**
+ * ClaudeAPIErrorResponseの型ガード
+ */
+function isClaudeAPIErrorResponse(data: unknown): data is ClaudeAPIErrorResponse {
+  if (typeof data !== 'object' || data === null) {
+    return false
+  }
+  const obj = data as Record<string, unknown>
+  if ('error' in obj && obj.error !== null) {
+    if (typeof obj.error !== 'object') {
+      return false
+    }
+    const error = obj.error as Record<string, unknown>
+    // messageが存在する場合は文字列であることを確認
+    if ('message' in error && typeof error.message !== 'string') {
+      return false
+    }
+    return true
+  }
+  return true
+}
 
 /** APIキー保存用のローカルストレージキー */
 const API_KEY_STORAGE_KEY = 'claude-dashboard-api-key'
@@ -170,36 +255,56 @@ function validateSeverity(value: unknown): ReviewSuggestion['severity'] {
 
 /**
  * Claude APIを呼び出してレビューを実行
+ *
+ * @throws {Error} APIキー無効、レート制限、サーバーエラー、ネットワークエラー時
  */
 async function callClaudeAPI(
   apiKey: string,
   fileName: string,
   content: string
 ): Promise<string> {
-  const response = await fetch(API_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: REVIEW_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: createReviewUserPrompt(fileName, content),
-        },
-      ],
-    }),
-  })
+  let response: Response
+
+  try {
+    response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: REVIEW_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: createReviewUserPrompt(fileName, content),
+          },
+        ],
+      }),
+    })
+  } catch (fetchError) {
+    // ネットワークエラーの場合
+    const errorMessage = fetchError instanceof Error
+      ? fetchError.message
+      : 'ネットワークエラーが発生しました'
+    throw new Error(`network: ${errorMessage}`)
+  }
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    const errorMessage = (errorData as { error?: { message?: string } }).error?.message || response.statusText
+    // エラーレスポンスの型安全なパース
+    let errorMessage = response.statusText
+    try {
+      const errorData: unknown = await response.json()
+      if (isClaudeAPIErrorResponse(errorData) && errorData.error?.message) {
+        errorMessage = errorData.error.message
+      }
+    } catch {
+      // JSONパースに失敗した場合はstatusTextを使用
+    }
 
     if (response.status === 401) {
       throw new Error('APIキーが無効です。正しいAPIキーを入力してください。')
@@ -214,14 +319,25 @@ async function callClaudeAPI(
     throw new Error(`API呼び出しに失敗しました: ${errorMessage}`)
   }
 
-  const data = await response.json()
-
-  // レスポンス形式の検証
-  if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
-    throw new Error('APIレスポンスの形式が不正です')
+  // 成功レスポンスの型安全なパース
+  let data: unknown
+  try {
+    data = await response.json()
+  } catch {
+    throw new Error('APIレスポンスのJSONパースに失敗しました')
   }
 
-  const textContent = data.content.find((c: { type: string }) => c.type === 'text')
+  // 型ガードによるレスポンス検証
+  if (!isClaudeAPIResponse(data)) {
+    throw new Error('APIレスポンスの形式が不正です: 予期しないデータ構造')
+  }
+
+  // レスポンス形式の検証
+  if (!data.content || data.content.length === 0) {
+    throw new Error('APIレスポンスの形式が不正です: contentが空です')
+  }
+
+  const textContent = data.content.find((c) => c.type === 'text')
   if (!textContent || typeof textContent.text !== 'string') {
     throw new Error('APIレスポンスにテキストが含まれていません')
   }
@@ -281,7 +397,33 @@ export function useAIReview(): UseAIReviewReturn {
   }, [apiKeyModal.isOpen]) // モーダルが閉じた時に再評価
 
   /**
+   * エラーメッセージからエラーコードを判定
+   */
+  const determineErrorCode = useCallback((errorMessage: string): AIReviewError['code'] => {
+    // APIキー関連
+    if (errorMessage.includes('APIキーが無効')) {
+      return 'api_key_missing'
+    }
+    // パースエラー
+    if (errorMessage.includes('パースに失敗') || errorMessage.includes('JSONパース')) {
+      return 'parse_error'
+    }
+    // ネットワークエラー（network:プレフィックス付きまたはキーワード検出）
+    if (errorMessage.startsWith('network:') || errorMessage.includes('network') || errorMessage.includes('fetch')) {
+      return 'network_error'
+    }
+    // APIエラー（レート制限、サーバーエラー等）
+    if (errorMessage.includes('API') || errorMessage.includes('レスポンス')) {
+      return 'api_error'
+    }
+    return 'unknown'
+  }, [])
+
+  /**
    * レビューを実行
+   *
+   * エラーは内部でキャッチし、状態として管理されます。
+   * 呼び出し側でtry-catchする必要はありません。
    */
   const runReview = useCallback(async (
     fileName: string,
@@ -300,6 +442,16 @@ export function useAIReview(): UseAIReviewReturn {
       return
     }
 
+    // 入力バリデーション
+    if (!fileName || !content) {
+      setError({
+        code: 'unknown',
+        message: 'ファイル名またはコンテンツが空です。',
+      })
+      setStatus('error')
+      return
+    }
+
     setStatus('loading')
     setError(null)
     setResult(null)
@@ -314,29 +466,37 @@ export function useAIReview(): UseAIReviewReturn {
       setResult(reviewResult)
       setStatus('success')
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '不明なエラーが発生しました'
-
-      // エラータイプの判定
-      let errorCode: AIReviewError['code'] = 'unknown'
-      if (errorMessage.includes('APIキーが無効')) {
-        errorCode = 'api_key_missing'
-        // 無効なAPIキーをクリア
-        clearAPIKey()
-      } else if (errorMessage.includes('パースに失敗')) {
-        errorCode = 'parse_error'
-      } else if (errorMessage.includes('API')) {
-        errorCode = 'api_error'
-      } else if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-        errorCode = 'network_error'
+      // エラーメッセージの抽出
+      let errorMessage: string
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'string') {
+        errorMessage = err
+      } else {
+        errorMessage = '不明なエラーが発生しました'
       }
+
+      // エラーコードの判定
+      const errorCode = determineErrorCode(errorMessage)
+
+      // APIキー無効の場合はクリア
+      if (errorCode === 'api_key_missing') {
+        clearAPIKey()
+      }
+
+      // ネットワークエラーの場合はプレフィックスを除去
+      const displayMessage = errorMessage.startsWith('network:')
+        ? errorMessage.replace('network: ', '')
+        : errorMessage
 
       setError({
         code: errorCode,
-        message: errorMessage,
+        message: displayMessage,
+        details: err instanceof Error && err.stack ? err.stack : undefined,
       })
       setStatus('error')
     }
-  }, [])
+  }, [determineErrorCode])
 
   /**
    * レビューをリセット
