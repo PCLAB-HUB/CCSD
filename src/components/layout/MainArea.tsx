@@ -12,6 +12,8 @@ import { LinterPanel } from '../linter'
 import type { LintMessageData } from '../linter/LintMessage'
 import ProblemsPanel from './ProblemsPanel'
 import StatusBar from './StatusBar'
+import SearchReplacePanel from '../search/SearchReplacePanel'
+import type { SearchMatch, SearchReplaceOptions } from '../../hooks/useSearchReplace'
 
 // MarkdownPreviewを遅延読み込み - Markdownファイルを開くまで不要
 const MarkdownPreview = lazy(() => import('../preview/MarkdownPreview'))
@@ -47,6 +49,22 @@ interface MainAreaProps {
   linterEnabled?: boolean
   linterResult?: LinterResult
   onToggleLinter?: (enabled: boolean) => void
+  // 検索＆置換関連のプロパティ
+  isSearchReplacePanelOpen?: boolean
+  onCloseSearchReplace?: () => void
+  replaceSearchQuery?: string
+  replaceText?: string
+  replaceMatches?: SearchMatch[]
+  replaceCurrentIndex?: number
+  replaceOptions?: SearchReplaceOptions
+  isReplacing?: boolean
+  onReplaceSearchChange?: (query: string) => void
+  onReplaceTextChange?: (text: string) => void
+  onReplaceOptionsChange?: (options: Partial<SearchReplaceOptions>) => void
+  onReplaceFindNext?: () => void
+  onReplaceFindPrev?: () => void
+  onReplaceCurrent?: () => void
+  onReplaceAll?: () => void
 }
 
 /** ファイル名から言語を判定 */
@@ -161,6 +179,22 @@ const MainArea: FC<MainAreaProps> = memo(({
   linterEnabled = false,
   linterResult,
   onToggleLinter,
+  // 検索＆置換関連
+  isSearchReplacePanelOpen = false,
+  onCloseSearchReplace,
+  replaceSearchQuery = '',
+  replaceText = '',
+  replaceMatches = [],
+  replaceCurrentIndex = 0,
+  replaceOptions = { caseSensitive: false, wholeWord: false, useRegex: false },
+  isReplacing = false,
+  onReplaceSearchChange,
+  onReplaceTextChange,
+  onReplaceOptionsChange,
+  onReplaceFindNext,
+  onReplaceFindPrev,
+  onReplaceCurrent,
+  onReplaceAll,
 }) => {
   // Markdownファイルかどうかを判定
   const isMarkdown = selectedFile ? isMarkdownFile(selectedFile.name) : false
@@ -264,6 +298,35 @@ const MainArea: FC<MainAreaProps> = memo(({
         <FileTab
           selectedFile={selectedFile}
           schemaType={schemaValidation?.schemaType}
+        />
+      )}
+
+      {/* 検索＆置換パネル */}
+      {onCloseSearchReplace && onReplaceSearchChange && onReplaceTextChange &&
+       onReplaceOptionsChange && onReplaceFindNext && onReplaceFindPrev &&
+       onReplaceCurrent && onReplaceAll && (
+        <SearchReplacePanel
+          isOpen={isSearchReplacePanelOpen}
+          onClose={onCloseSearchReplace}
+          searchQuery={replaceSearchQuery}
+          replaceText={replaceText}
+          matches={replaceMatches.map(m => ({
+            start: m.start,
+            end: m.end,
+            text: m.text,
+            line: m.line + 1, // 1-indexed for display
+            column: m.column,
+          }))}
+          currentMatchIndex={replaceCurrentIndex}
+          options={replaceOptions}
+          isReplacing={isReplacing}
+          onSearchChange={onReplaceSearchChange}
+          onReplaceTextChange={onReplaceTextChange}
+          onOptionsChange={onReplaceOptionsChange}
+          onFindNext={onReplaceFindNext}
+          onFindPrev={onReplaceFindPrev}
+          onReplaceCurrent={onReplaceCurrent}
+          onReplaceAll={onReplaceAll}
         />
       )}
 
