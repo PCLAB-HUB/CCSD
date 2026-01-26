@@ -13,6 +13,7 @@ use walkdir::WalkDir;
 
 /// ダッシュボードに表示する統計データ
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Stats {
     /// サブエージェント数（agents/categories/*/*.md）
     pub sub_agent_count: u32,
@@ -90,33 +91,53 @@ fn count_skills(claude_dir: &Path) -> u32 {
         .count() as u32
 }
 
-/// settings.json から mcpServers のキー数を取得
+/// ~/.claude/ 配下の .mcp.json ファイル内のMCPサーバー定義数をカウント
+/// 各 .mcp.json ファイルはオブジェクト形式でサーバーを定義している
 fn count_mcp_servers(claude_dir: &Path) -> u32 {
-    let settings_path = claude_dir.join("settings.json");
-    if !settings_path.exists() {
-        return 0;
+    let mut total_servers: u32 = 0;
+
+    // .mcp.json ファイルを再帰的に検索
+    for entry in WalkDir::new(claude_dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.path().is_file()
+                && e.path()
+                    .file_name()
+                    .map(|n| n == ".mcp.json" || n == "mcp.json")
+                    .unwrap_or(false)
+        })
+    {
+        if let Ok(content) = fs::read_to_string(entry.path()) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                // 各 .mcp.json ファイルのトップレベルキー数をカウント
+                // 例: {"context7": {...}, "another-server": {...}} -> 2
+                if let Some(obj) = json.as_object() {
+                    total_servers += obj.len() as u32;
+                }
+            }
+        }
     }
 
-    fs::read_to_string(&settings_path)
-        .ok()
-        .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok())
-        .and_then(|json| json.get("mcpServers").cloned())
-        .and_then(|servers| servers.as_object().map(|obj| obj.len() as u32))
-        .unwrap_or(0)
+    total_servers
 }
 
-/// settings.json から enabledPlugins の配列長を取得
+/// インストール済みプラグイン数をカウント
+/// plugins/installed_plugins.json 内の plugins オブジェクトのキー数をカウント
 fn count_plugins(claude_dir: &Path) -> u32 {
-    let settings_path = claude_dir.join("settings.json");
-    if !settings_path.exists() {
+    let installed_path = claude_dir
+        .join("plugins")
+        .join("installed_plugins.json");
+
+    if !installed_path.exists() {
         return 0;
     }
 
-    fs::read_to_string(&settings_path)
+    fs::read_to_string(&installed_path)
         .ok()
         .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok())
-        .and_then(|json| json.get("enabledPlugins").cloned())
-        .and_then(|plugins| plugins.as_array().map(|arr| arr.len() as u32))
+        .and_then(|json| json.get("plugins").cloned())
+        .and_then(|plugins| plugins.as_object().map(|obj| obj.len() as u32))
         .unwrap_or(0)
 }
 

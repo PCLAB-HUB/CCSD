@@ -27,6 +27,7 @@ use commands::{
     create_file,
     get_file_tree,
     read_file,
+    search_and_replace_in_file,
     search_files,
     write_file,
     // backup
@@ -78,6 +79,7 @@ pub fn run() {
             write_file,
             create_file,
             search_files,
+            search_and_replace_in_file,
             // バックアップ操作
             create_backup,
             get_backups,
