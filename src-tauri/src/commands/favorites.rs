@@ -211,8 +211,10 @@ mod tests {
             added_at: "2024-01-01T12:00:00.000+0900".to_string(),
         };
 
-        let json = serde_json::to_string(&item).unwrap();
-        let parsed: FavoriteItem = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&item)
+            .expect("FavoriteItemのシリアライズに失敗しました");
+        let parsed: FavoriteItem = serde_json::from_str(&json)
+            .expect("FavoriteItemのデシリアライズに失敗しました");
 
         assert_eq!(parsed.path, item.path);
         assert_eq!(parsed.name, item.name);
