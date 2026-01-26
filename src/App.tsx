@@ -227,12 +227,12 @@ function App() {
     closeTab,
     setActiveTab,
     reorderTabs,
+    openTab,
+    updateTabContent,
+    markTabAsSaved,
     // 将来の拡張用に保持（現在は未使用）
     // activeTab,
     // hasUnsavedTabs,
-    // openTab,
-    // updateTabContent,
-    // markTabAsSaved,
     // closeAllTabs,
     // closeSavedTabs,
     // closeOtherTabs,
@@ -282,6 +282,7 @@ function App() {
   /**
    * ファイル選択ハンドラ
    * 検索結果からの選択時はハイライトを設定
+   * タブエディタにも追加する
    */
   const handleFileSelect = useCallback(async (
     path: string,
@@ -298,6 +299,42 @@ function App() {
     }
     resetSearch()
   }, [selectFile, setHighlight, clearHighlight, resetSearch])
+
+  // selectedFileが変更されたらタブを開く
+  useEffect(() => {
+    if (selectedFile) {
+      openTab(selectedFile.path, selectedFile.name, selectedFile.content)
+    }
+  }, [selectedFile?.path, selectedFile?.name, openTab])
+
+  // selectedFileの内容が変更されたらタブの内容も更新
+  useEffect(() => {
+    if (selectedFile && activeTabId === selectedFile.path) {
+      updateTabContent(selectedFile.path, selectedFile.content)
+    }
+  }, [selectedFile?.content, selectedFile?.path, activeTabId, updateTabContent])
+
+  // ファイル保存後にタブを保存済み状態にマーク
+  useEffect(() => {
+    if (selectedFile && selectedFile.content === selectedFile.originalContent) {
+      markTabAsSaved(selectedFile.path)
+    }
+  }, [selectedFile?.originalContent, selectedFile?.content, selectedFile?.path, markTabAsSaved])
+
+  /**
+   * タブ選択時のハンドラ
+   * タブを選択したときに対応するファイルを読み込む
+   */
+  const handleSelectTab = useCallback(async (tabId: string) => {
+    setActiveTab(tabId)
+    // 現在選択中のファイルと異なるタブの場合、そのファイルを読み込む
+    if (selectedFile?.path !== tabId) {
+      const tab = tabs.find(t => t.id === tabId)
+      if (tab) {
+        await selectFile(tab.path, tab.name)
+      }
+    }
+  }, [setActiveTab, selectedFile?.path, tabs, selectFile])
 
   /**
    * 検索結果クリック時のハンドラ
@@ -487,7 +524,7 @@ function App() {
           onCompareWithBackup={compareWithBackup}
           tabs={tabs}
           activeTabId={activeTabId ?? undefined}
-          onSelectTab={setActiveTab}
+          onSelectTab={handleSelectTab}
           onCloseTab={closeTab}
           onReorderTabs={reorderTabs}
           linterEnabled={linterConfig.enabledCategories.length > 0}
