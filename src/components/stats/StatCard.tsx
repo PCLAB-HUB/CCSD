@@ -4,7 +4,15 @@ import { memo, useId } from 'react'
  * 統計カードのアイコンタイプ
  * 色だけでなくパターン/形状で区別するためのバリアント
  */
-export type StatIconVariant = 'files' | 'lines' | 'size' | 'warnings' | 'errors' | 'custom'
+export type StatIconVariant =
+  | 'agents'      // サブエージェント - ロボットアイコン
+  | 'categories'  // カテゴリ - フォルダグリッドアイコン
+  | 'skills'      // スキル - 稲妻アイコン
+  | 'servers'     // MCPサーバー - サーバーアイコン
+  | 'plugins'     // プラグイン - パズルピースアイコン
+  | 'backups'     // バックアップ - クラウドアイコン
+  | 'files'       // 総ファイル数 - ファイルスタックアイコン
+  | 'custom'
 
 interface StatCardProps {
   /** 統計項目のラベル（例：「総ファイル数」） */
@@ -33,80 +41,119 @@ interface StatCardProps {
  */
 const StatIcon = memo<{ variant: StatIconVariant }>(({ variant }) => {
   switch (variant) {
+    // サブエージェント - ロボット/人型アイコン（青）
+    case 'agents':
+      return (
+        <svg
+          className="size-5 text-blue-600 dark:text-blue-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <rect x="3" y="11" width="18" height="10" rx="2" />
+          <circle cx="12" cy="5" r="3" />
+          <path d="M8 15h.01M16 15h.01" />
+          <path d="M9 18h6" />
+        </svg>
+      )
+    // カテゴリ - フォルダグリッドアイコン（緑）
+    case 'categories':
+      return (
+        <svg
+          className="size-5 text-green-600 dark:text-green-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      )
+    // スキル - 稲妻アイコン（黄）
+    case 'skills':
+      return (
+        <svg
+          className="size-5 text-yellow-600 dark:text-yellow-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      )
+    // MCPサーバー - サーバーアイコン（紫）
+    case 'servers':
+      return (
+        <svg
+          className="size-5 text-purple-600 dark:text-purple-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <rect x="2" y="2" width="20" height="8" rx="2" />
+          <rect x="2" y="14" width="20" height="8" rx="2" />
+          <circle cx="6" cy="6" r="1" fill="currentColor" />
+          <circle cx="6" cy="18" r="1" fill="currentColor" />
+          <line x1="10" y1="6" x2="18" y2="6" />
+          <line x1="10" y1="18" x2="18" y2="18" />
+        </svg>
+      )
+    // プラグイン - パズルピースアイコン（ピンク）
+    case 'plugins':
+      return (
+        <svg
+          className="size-5 text-pink-600 dark:text-pink-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z" />
+        </svg>
+      )
+    // バックアップ - クラウドアップロードアイコン（シアン）
+    case 'backups':
+      return (
+        <svg
+          className="size-5 text-cyan-600 dark:text-cyan-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+          <polyline points="12 12 12 16" />
+          <polyline points="9 14 12 11 15 14" />
+        </svg>
+      )
+    // 総ファイル数 - ファイルスタックアイコン（オレンジ）
     case 'files':
       return (
         <svg
-          className="w-5 h-5 text-blue-600 dark:text-blue-400"
+          className="size-5 text-orange-600 dark:text-orange-400"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           aria-hidden="true"
         >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-        </svg>
-      )
-    case 'lines':
-      return (
-        <svg
-          className="w-5 h-5 text-green-600 dark:text-green-400"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <line x1="4" y1="6" x2="20" y2="6" />
-          <line x1="4" y1="10" x2="16" y2="10" />
-          <line x1="4" y1="14" x2="18" y2="14" />
-          <line x1="4" y1="18" x2="12" y2="18" />
-        </svg>
-      )
-    case 'size':
-      return (
-        <svg
-          className="w-5 h-5 text-purple-600 dark:text-purple-400"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l4 2" />
-        </svg>
-      )
-    case 'warnings':
-      return (
-        <svg
-          className="w-5 h-5 text-yellow-600 dark:text-yellow-400"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <circle cx="12" cy="17" r="0.5" fill="currentColor" />
-        </svg>
-      )
-    case 'errors':
-      return (
-        <svg
-          className="w-5 h-5 text-red-600 dark:text-red-400"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
-          <line x1="15" y1="9" x2="9" y2="15" />
-          <line x1="9" y1="9" x2="15" y2="15" />
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+          <path d="M10 9H8" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
         </svg>
       )
     default:
@@ -151,7 +198,7 @@ export const StatCard = memo<StatCardProps>(({
   }
 
   const interactiveClasses = hasClickHandler
-    ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750'
+    ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700'
     : ''
 
   return (
@@ -211,7 +258,7 @@ export const StatCard = memo<StatCardProps>(({
           aria-hidden="true"
         >
           <svg
-            className="w-4 h-4 text-gray-400"
+            className="size-4 text-gray-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

@@ -2,6 +2,7 @@ import { FC, useState, useEffect, useMemo } from 'react'
 import type { UnifiedTemplate } from '../../types'
 import { isCustomTemplate } from '../../types'
 import Modal from '../common/Modal'
+import Icon from '../common/Icon'
 
 interface CreateFromTemplateDialogProps {
   isOpen: boolean
@@ -137,15 +138,7 @@ const CreateFromTemplateDialog: FC<CreateFromTemplateDialogProps> = ({
       title="テンプレート選択に戻る"
       aria-label="テンプレート選択に戻る"
     >
-      <svg
-        className="w-5 h-5 text-gray-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-      </svg>
+      <Icon name="chevronLeft" className="size-5 text-gray-500 dark:text-gray-400" />
     </button>
   )
 
@@ -166,9 +159,7 @@ const CreateFromTemplateDialog: FC<CreateFromTemplateDialogProps> = ({
             : 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-500'
         }`}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
+        <Icon name="plus" className="size-4" />
         作成
       </button>
     </div>
@@ -210,7 +201,7 @@ const CreateFromTemplateDialog: FC<CreateFromTemplateDialogProps> = ({
                   onChange={(e) => handleFieldChange(field.name, e.target.value)}
                   placeholder={field.placeholder}
                   aria-required={field.required}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
               </div>
             ))}
@@ -223,7 +214,7 @@ const CreateFromTemplateDialog: FC<CreateFromTemplateDialogProps> = ({
               <select
                 value={directory}
                 onChange={(e) => setDirectory(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {directoryOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -253,7 +244,7 @@ const CreateFromTemplateDialog: FC<CreateFromTemplateDialogProps> = ({
                   value={customFileName}
                   onChange={(e) => setCustomFileName(e.target.value)}
                   placeholder={generatedFileName}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
               ) : (
                 <div className="px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-300">
@@ -275,10 +266,10 @@ const CreateFromTemplateDialog: FC<CreateFromTemplateDialogProps> = ({
 
         {/* Right: Preview */}
         <div className="w-1/2 flex flex-col">
-          <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">プレビュー</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-6">
             <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
               {previewContent}
             </pre>

@@ -1,6 +1,7 @@
 import { memo, useCallback, useId, useMemo } from 'react'
 import { StatCard, type StatIconVariant } from './StatCard'
 import { StatsMetaInfo } from './StatsMetaInfo'
+import { Icon } from '../common'
 import type { Stats } from '../../types/stats'
 
 /**
@@ -42,6 +43,7 @@ interface StatsPanelProps {
 
 /**
  * Stats型からStatItem配列に変換するヘルパー関数
+ * 各項目にユニークなアイコンを割り当て
  */
 function convertStatsToItems(stats: Stats): StatItem[] {
   return [
@@ -50,49 +52,49 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       label: 'サブエージェント',
       value: stats.subAgentCount,
       unit: '個',
-      iconVariant: 'files' as StatIconVariant,
+      iconVariant: 'agents' as StatIconVariant,  // ロボットアイコン（青）
     },
     {
       key: 'categories',
       label: 'カテゴリ',
       value: stats.categoryCount,
       unit: '個',
-      iconVariant: 'files' as StatIconVariant,
+      iconVariant: 'categories' as StatIconVariant,  // グリッドアイコン（緑）
     },
     {
       key: 'skills',
       label: 'スキル',
       value: stats.skillCount,
       unit: '個',
-      iconVariant: 'lines' as StatIconVariant,
+      iconVariant: 'skills' as StatIconVariant,  // 稲妻アイコン（黄）
     },
     {
       key: 'mcpServers',
       label: 'MCPサーバー',
       value: stats.mcpServerCount,
       unit: '個',
-      iconVariant: 'size' as StatIconVariant,
+      iconVariant: 'servers' as StatIconVariant,  // サーバーアイコン（紫）
     },
     {
       key: 'plugins',
       label: 'プラグイン',
       value: stats.pluginCount,
       unit: '個',
-      iconVariant: 'size' as StatIconVariant,
+      iconVariant: 'plugins' as StatIconVariant,  // パズルアイコン（ピンク）
     },
     {
       key: 'backups',
       label: 'バックアップ',
       value: stats.backupCount,
       unit: '個',
-      iconVariant: 'files' as StatIconVariant,
+      iconVariant: 'backups' as StatIconVariant,  // クラウドアイコン（シアン）
     },
     {
       key: 'totalFiles',
       label: '総ファイル数',
       value: stats.totalFileCount,
       unit: '個',
-      iconVariant: 'files' as StatIconVariant,
+      iconVariant: 'files' as StatIconVariant,  // ファイルスタックアイコン（オレンジ）
     },
   ]
 }
@@ -191,26 +193,12 @@ export const StatsPanel = memo<StatsPanelProps>(({
           px-3 py-2
           bg-gray-100 dark:bg-gray-800
           border-b border-gray-200 dark:border-gray-700
-          ${collapsible ? 'cursor-pointer hover:bg-gray-150 dark:hover:bg-gray-750' : ''}
+          ${collapsible ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700' : ''}
           ${collapsible ? 'focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500' : ''}
         `}
       >
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-          {/* 統計アイコン */}
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-            />
-          </svg>
+          <Icon name="diff" className="size-4" />
           統計情報
         </h2>
 
@@ -221,19 +209,7 @@ export const StatsPanel = memo<StatsPanelProps>(({
             style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
             aria-hidden="true"
           >
-            <svg
-              className="w-4 h-4 text-gray-500 dark:text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <Icon name="chevronDown" className="size-4 text-gray-500 dark:text-gray-400" />
           </div>
         )}
       </div>
@@ -257,7 +233,7 @@ export const StatsPanel = memo<StatsPanelProps>(({
               aria-label="統計情報を読み込み中"
             >
               <svg
-                className="w-6 h-6 animate-spin text-gray-400"
+                className="size-6 animate-spin text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 aria-hidden="true"

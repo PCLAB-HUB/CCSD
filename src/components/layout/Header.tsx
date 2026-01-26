@@ -31,6 +31,10 @@ interface HeaderProps {
   onTogglePreview?: () => void
   scrollSync?: boolean
   onToggleScrollSync?: () => void
+  // プレビューウィンドウ
+  onOpenPreviewWindow?: () => void
+  isPreviewWindowOpen?: boolean
+  isPreviewWindowLoading?: boolean
 }
 
 const Header = memo<HeaderProps>(({
@@ -59,11 +63,44 @@ const Header = memo<HeaderProps>(({
   onTogglePreview,
   scrollSync = false,
   onToggleScrollSync,
+  onOpenPreviewWindow,
+  isPreviewWindowOpen = false,
+  isPreviewWindowLoading = false,
 }) => {
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold">Claude Code Settings</h1>
+        <h1 className="text-lg font-semibold flex items-center gap-2">
+          CCSD
+          {/* Claude Code Invader Icon */}
+          <svg
+            className="size-6 text-orange-500"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            {/* Classic Space Invader style icon */}
+            <rect x="4" y="4" width="2" height="2" />
+            <rect x="18" y="4" width="2" height="2" />
+            <rect x="6" y="6" width="2" height="2" />
+            <rect x="16" y="6" width="2" height="2" />
+            <rect x="4" y="8" width="16" height="2" />
+            <rect x="2" y="10" width="4" height="2" />
+            <rect x="8" y="10" width="8" height="2" />
+            <rect x="18" y="10" width="4" height="2" />
+            <rect x="2" y="12" width="2" height="2" />
+            <rect x="6" y="12" width="12" height="2" />
+            <rect x="20" y="12" width="2" height="2" />
+            <rect x="2" y="14" width="2" height="2" />
+            <rect x="6" y="14" width="2" height="2" />
+            <rect x="16" y="14" width="2" height="2" />
+            <rect x="20" y="14" width="2" height="2" />
+            <rect x="8" y="14" width="3" height="2" />
+            <rect x="13" y="14" width="3" height="2" />
+            <rect x="4" y="16" width="4" height="2" />
+            <rect x="16" y="16" width="4" height="2" />
+          </svg>
+        </h1>
         <StatusBadges
           hasUnsavedChanges={hasUnsavedChanges}
           message={message}
@@ -95,6 +132,9 @@ const Header = memo<HeaderProps>(({
           onTogglePreview={onTogglePreview}
           scrollSync={scrollSync}
           onToggleScrollSync={onToggleScrollSync}
+          onOpenPreviewWindow={onOpenPreviewWindow}
+          isPreviewWindowOpen={isPreviewWindowOpen}
+          isPreviewWindowLoading={isPreviewWindowLoading}
           selectedFilePath={selectedFilePath}
           selectedFileName={selectedFileName}
           hasUnsavedChanges={hasUnsavedChanges}
