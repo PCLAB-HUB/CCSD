@@ -1,5 +1,6 @@
-import { FC, useMemo, memo, lazy, Suspense, useCallback } from 'react'
+import { FC, useMemo, memo, lazy, Suspense, useCallback, useEffect, useRef } from 'react'
 import Editor from '@monaco-editor/react'
+import type * as monaco from 'monaco-editor'
 import type { SelectedFile, SearchHighlight, ValidationError, Tab } from '../../types'
 import { countBySeverity, getSchemaTypeName, type SchemaFileType } from '../../utils/schemaValidators'
 import { useMonacoEditor } from '../../hooks/useMonacoEditor'
@@ -218,12 +219,86 @@ const MainArea: FC<MainAreaProps> = memo(({
     allErrors: syntaxErrors,
   })
 
-  // 検索ハイライトカスタムフック
+  // 検索ハイライトカスタムフック（ヘッダーの検索バー用）
   useSearchHighlight({
     editorRef,
     searchHighlight,
     onSearchCountUpdate,
   })
+
+  // 検索＆置換パネル用のデコレーションref
+  const replaceDecorationsRef = useRef<string[]>([])
+
+  // 検索＆置換パネルのマッチをエディタにハイライト表示＆スクロール
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+
+    const model = editor.getModel()
+    if (!model) return
+
+    // 検索＆置換パネルが閉じている場合、または通常検索が有効な場合はデコレーションをクリア
+    if (!isSearchReplacePanelOpen || searchHighlight?.query) {
+      replaceDecorationsRef.current = editor.deltaDecorations(replaceDecorationsRef.current, [])
+      return
+    }
+
+    // マッチがない場合はデコレーションをクリア
+    if (replaceMatches.length === 0) {
+      replaceDecorationsRef.current = editor.deltaDecorations(replaceDecorationsRef.current, [])
+      return
+    }
+
+    // モナコのOverviewRulerLaneの値（直接指定）
+    const OverviewRulerLaneCenter = 2
+
+    // マッチ位置からMonacoのRangeを計算するヘルパー関数
+    const getRange = (start: number, end: number): monaco.IRange => {
+      const startPos = model.getPositionAt(start)
+      const endPos = model.getPositionAt(end)
+      return {
+        startLineNumber: startPos.lineNumber,
+        startColumn: startPos.column,
+        endLineNumber: endPos.lineNumber,
+        endColumn: endPos.column,
+      }
+    }
+
+    // デコレーションを作成（ハイライト表示）
+    const decorations: monaco.editor.IModelDeltaDecoration[] = replaceMatches.map((match, index) => ({
+      range: getRange(match.start, match.end),
+      options: {
+        isWholeLine: false,
+        inlineClassName: index === replaceCurrentIndex
+          ? 'search-replace-highlight-current'
+          : 'search-replace-highlight',
+        overviewRuler: {
+          color: index === replaceCurrentIndex ? '#ff6b00' : '#4fc3f7',
+          position: OverviewRulerLaneCenter,
+        },
+      },
+    }))
+
+    replaceDecorationsRef.current = editor.deltaDecorations(replaceDecorationsRef.current, decorations)
+
+    // 現在のマッチにスクロール
+    if (replaceMatches[replaceCurrentIndex]) {
+      const currentMatch = replaceMatches[replaceCurrentIndex]
+      const range = getRange(currentMatch.start, currentMatch.end)
+      editor.setSelection({
+        startLineNumber: range.startLineNumber,
+        startColumn: range.startColumn,
+        endLineNumber: range.endLineNumber,
+        endColumn: range.endColumn,
+      })
+      editor.revealRangeInCenter({
+        startLineNumber: range.startLineNumber,
+        startColumn: range.startColumn,
+        endLineNumber: range.endLineNumber,
+        endColumn: range.endColumn,
+      })
+    }
+  }, [editorRef, isSearchReplacePanelOpen, replaceMatches, replaceCurrentIndex, searchHighlight?.query])
 
   // Tab[] を EditorTab[] に変換
   const editorTabs = useMemo<EditorTab[]>(() => {

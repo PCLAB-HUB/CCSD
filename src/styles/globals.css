@@ -96,6 +96,27 @@
     50% { box-shadow: 0 0 12px rgba(255, 102, 0, 0.9), 0 0 4px rgba(255, 102, 0, 1); }
   }
 
+  /* 検索＆置換ハイライト (MainArea.tsx - Monaco Editor用) */
+  .search-replace-highlight {
+    background-color: rgba(79, 195, 247, 0.4) !important;
+    border: 2px solid rgba(79, 195, 247, 0.8);
+    border-radius: 3px;
+    box-shadow: 0 0 4px rgba(79, 195, 247, 0.5);
+  }
+
+  .search-replace-highlight-current {
+    background-color: rgba(255, 107, 0, 0.6) !important;
+    border: 3px solid #ff6b00;
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(255, 107, 0, 0.7), 0 0 2px rgba(255, 107, 0, 1);
+    animation: pulse-replace-highlight 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-replace-highlight {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 107, 0, 0.7), 0 0 2px rgba(255, 107, 0, 1); }
+    50% { box-shadow: 0 0 12px rgba(255, 107, 0, 0.9), 0 0 4px rgba(255, 107, 0, 1); }
+  }
+
   /* ステータスバッジ (StatusBadges.tsx, ExportMenu.tsx) - 共通ベース + バリアント */
   .message-badge-success {
     @apply text-xs px-2 py-1 rounded
