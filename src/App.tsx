@@ -1,7 +1,8 @@
-import { useCallback, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
 import MainArea from './components/layout/MainArea'
+import { StatsPanel } from './components/stats'
 
 // 遅延読み込み - モーダルコンポーネントは初期表示に不要
 const DiffModal = lazy(() => import('./components/diff/DiffModal'))
@@ -10,6 +11,7 @@ const TemplateSelector = lazy(() => import('./components/template/TemplateSelect
 const CreateFromTemplateDialog = lazy(() => import('./components/template/CreateFromTemplateDialog'))
 const TemplateManager = lazy(() => import('./components/template/TemplateManager'))
 const ImportDialog = lazy(() => import('./components/import/ImportDialog'))
+const AIReviewPanel = lazy(() => import('./components/aiReview/AIReviewPanel'))
 
 import { isMarkdownFile } from './utils/markdownParser'
 
@@ -25,6 +27,11 @@ import {
   useMarkdownPreview,
   usePreviewWindow,
   useImport,
+  useStats,
+  useFavorites,
+  useTabEditor,
+  useLinter,
+  useAIReview,
 } from './hooks'
 
 /**
@@ -43,11 +50,40 @@ import {
  * - useKeyboardShortcuts: キーボードショートカット
  * - useMarkdownPreview: Markdownプレビュー
  * - useImport: インポート機能
+ * - useFavorites: お気に入り機能
+ * - useTabEditor: タブエディタ機能
+ * - useLinter: ベストプラクティスリンター機能
+ * - useAIReview: AIレビュー機能
  */
+/** localStorage key for stats panel collapsed state */
+const STATS_COLLAPSED_KEY = 'claude-settings-stats-collapsed'
+
 function App() {
   // ========================================
   // カスタムフックの初期化
   // ========================================
+
+  // 統計パネルの折りたたみ状態（localStorageから初期値を読み込み）
+  const [isStatsCollapsed, setIsStatsCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(STATS_COLLAPSED_KEY)
+      return saved ? JSON.parse(saved) : false
+    } catch {
+      return false
+    }
+  })
+
+  // AIレビューパネルの表示状態
+  const [isAIReviewPanelOpen, setIsAIReviewPanelOpen] = useState(false)
+
+  // 折りたたみ状態が変更されたらlocalStorageに保存
+  useEffect(() => {
+    try {
+      localStorage.setItem(STATS_COLLAPSED_KEY, JSON.stringify(isStatsCollapsed))
+    } catch {
+      // localStorage書き込みエラーは無視
+    }
+  }, [isStatsCollapsed])
 
   // UI状態管理（ダークモード、メッセージ、サイドバー幅、読み取り専用）
   const {
@@ -169,6 +205,76 @@ function App() {
   // キーボードショートカット（Cmd+S / Ctrl+S で保存）
   useKeyboardShortcuts({ onSave: saveFile })
 
+  // 統計データ
+  const { stats } = useStats()
+
+  // お気に入り機能
+  const {
+    favorites,
+    isFavorite,
+    toggleFavorite,
+    removeFavorite,
+    reorderFavorites,
+  } = useFavorites({
+    onSuccess: showSuccess,
+    onError: showError,
+  })
+
+  // タブエディタ機能
+  const {
+    tabs,
+    activeTabId,
+    closeTab,
+    setActiveTab,
+    reorderTabs,
+    // 将来の拡張用に保持（現在は未使用）
+    // activeTab,
+    // hasUnsavedTabs,
+    // openTab,
+    // updateTabContent,
+    // markTabAsSaved,
+    // closeAllTabs,
+    // closeSavedTabs,
+    // closeOtherTabs,
+    // isTabUnsaved,
+  } = useTabEditor({
+    onUnsavedWarning: (unsavedTabs) => {
+      const fileNames = unsavedTabs.map(t => t.name).join(', ')
+      return window.confirm(`未保存の変更があります: ${fileNames}\n変更を破棄してもよろしいですか？`)
+    },
+  })
+
+  // リンター機能
+  const {
+    config: linterConfig,
+    lastResult: linterResult,
+    updateConfig: updateLinterConfig,
+    // 将来の拡張用に保持（現在は未使用）
+    // rules: linterRules,
+    // hasIssues: linterHasIssues,
+    // hasErrors: linterHasErrors,
+    // runLint,
+    // toggleCategory: toggleLinterCategory,
+    // clearResult: clearLinterResult,
+  } = useLinter()
+
+  // AIレビュー機能
+  const {
+    status: aiReviewStatus,
+    result: aiReviewResult,
+    error: aiReviewError,
+    runReview: runAIReview,
+    // 将来の拡張用に保持（現在は未使用）
+    // apiKeyModal,
+    // hasAPIKey,
+    // resetReview: resetAIReview,
+    // openAPIKeyModal,
+    // closeAPIKeyModal,
+    // setAPIKey,
+    // clearAPIKey: clearAIAPIKey,
+    // updateAPIKeyInput,
+  } = useAIReview()
+
   // ========================================
   // イベントハンドラ
   // ========================================
@@ -233,6 +339,36 @@ function App() {
     previewChanges(selectedFile)
   }, [previewChanges, selectedFile])
 
+  /**
+   * AIレビュー実行ハンドラ
+   * 将来の拡張用（ヘッダーまたはツールバーにボタンを追加予定）
+   */
+  const _handleRunAIReview = useCallback(() => {
+    if (selectedFile) {
+      setIsAIReviewPanelOpen(true)
+      runAIReview(selectedFile.name, selectedFile.path, selectedFile.content)
+    }
+  }, [selectedFile, runAIReview])
+
+  // _handleRunAIReviewは将来の拡張で使用予定
+  void _handleRunAIReview
+
+  /**
+   * AIレビューパネルを閉じる
+   */
+  const handleCloseAIReviewPanel = useCallback(() => {
+    setIsAIReviewPanelOpen(false)
+  }, [])
+
+  /**
+   * AIレビュー再試行ハンドラ
+   */
+  const handleRetryAIReview = useCallback(() => {
+    if (selectedFile) {
+      runAIReview(selectedFile.name, selectedFile.path, selectedFile.content)
+    }
+  }, [selectedFile, runAIReview])
+
   // ========================================
   // 派生状態
   // ========================================
@@ -248,6 +384,26 @@ function App() {
       </div>
     </div>
   ), [])
+
+  // AIレビュー結果をAIReviewPanelの形式に変換
+  const aiReviewPanelResult = useMemo(() => {
+    if (!aiReviewResult) return null
+    return {
+      summary: aiReviewResult.summary,
+      suggestions: aiReviewResult.suggestions.map(s => ({
+        id: s.id,
+        severity: s.severity === 'critical' ? 'error' as const :
+                  s.severity === 'warning' ? 'warning' as const : 'info' as const,
+        title: s.title,
+        description: s.description,
+        line: s.lineNumber,
+        before: s.before,
+        after: s.after,
+      })),
+      overallScore: aiReviewResult.score.overall,
+      reviewedAt: new Date(aiReviewResult.timestamp),
+    }
+  }, [aiReviewResult])
 
   // ========================================
   // レンダリング
@@ -287,6 +443,15 @@ function App() {
         isPreviewWindowLoading={isPreviewWindowLoading}
       />
 
+      {/* 統計パネル: ヘッダー直下に配置 */}
+      {stats && (
+        <StatsPanel
+          stats={stats}
+          isCollapsed={isStatsCollapsed}
+          onToggleCollapse={() => setIsStatsCollapsed(!isStatsCollapsed)}
+        />
+      )}
+
       {/* メインコンテンツ: サイドバー + エディタ */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -298,6 +463,12 @@ function App() {
           loading={loading}
           error={fileTreeError}
           onRetry={loadFileTree}
+          favorites={favorites}
+          onFavoriteSelect={handleFileSelect}
+          onFavoriteRemove={(path) => { void removeFavorite(path) }}
+          onFavoritesReorder={(startIndex, endIndex) => { void reorderFavorites(startIndex, endIndex) }}
+          isFavorite={isFavorite}
+          onToggleFavorite={(path, name) => { void toggleFavorite(path, name) }}
         />
         <MainArea
           selectedFile={selectedFile}
@@ -314,6 +485,34 @@ function App() {
           onPreviewChanges={handlePreviewChanges}
           hasUnsavedChanges={hasUnsavedChanges}
           onCompareWithBackup={compareWithBackup}
+          tabs={tabs}
+          activeTabId={activeTabId ?? undefined}
+          onSelectTab={setActiveTab}
+          onCloseTab={closeTab}
+          onReorderTabs={reorderTabs}
+          linterEnabled={linterConfig.enabledCategories.length > 0}
+          linterResult={linterResult ? {
+            messages: linterResult.issues.map((issue, index) => ({
+              id: `lint-${index}`,
+              severity: issue.severity,
+              message: issue.message,
+              line: issue.line,
+              column: issue.column,
+              source: issue.ruleId,
+              fix: issue.suggestion ? {
+                description: issue.suggestion,
+                replacement: '',
+              } : undefined,
+            })),
+            enabled: linterConfig.enabledCategories.length > 0,
+          } : undefined}
+          onToggleLinter={(enabled) => {
+            if (enabled) {
+              updateLinterConfig({ enabledCategories: ['skill', 'agent', 'common'] })
+            } else {
+              updateLinterConfig({ enabledCategories: [] })
+            }
+          }}
         />
       </div>
 
@@ -377,6 +576,24 @@ function App() {
             onClose={closeImportDialog}
             onImportComplete={handleImportComplete}
           />
+        )}
+
+        {/* AI Review Panel Modal */}
+        {isAIReviewPanelOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-2xl h-[80vh] bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden">
+              <AIReviewPanel
+                status={aiReviewStatus === 'loading' ? 'loading' :
+                        aiReviewStatus === 'success' ? 'success' :
+                        aiReviewStatus === 'error' ? 'error' : 'idle'}
+                result={aiReviewPanelResult}
+                error={aiReviewError?.message || null}
+                darkMode={darkMode}
+                onClose={handleCloseAIReviewPanel}
+                onRetry={handleRetryAIReview}
+              />
+            </div>
+          </div>
         )}
       </Suspense>
     </div>
