@@ -5,11 +5,68 @@
  */
 
 // ============================================================
-// 基本型
+// 基本型（現行版との後方互換性を維持）
 // ============================================================
 
 /**
- * お気に入りの識別子
+ * お気に入りアイテム（現行版）
+ *
+ * 現在のuseFavoritesで使用されているシンプルな型
+ */
+export interface FavoriteItem {
+  /** ファイルパス（一意識別子として使用） */
+  path: string
+  /** ファイル名 */
+  name: string
+  /** 表示順序 */
+  order: number
+  /** 追加日時（ISO 8601形式） */
+  addedAt: string
+}
+
+/**
+ * お気に入りデータ（永続化用）
+ */
+export interface FavoritesData {
+  /** バージョン（将来のマイグレーション用） */
+  version: number
+  /** お気に入りアイテムの配列 */
+  items: FavoriteItem[]
+}
+
+/**
+ * Rust側からのお気に入りデータ（snake_case）
+ */
+export interface FavoritesDataRust {
+  version: number
+  items: Array<{
+    path: string
+    name: string
+    order: number
+    added_at: string
+  }>
+}
+
+/**
+ * お気に入り操作のインターフェース（現行版）
+ */
+export interface FavoriteActions {
+  /** お気に入りに追加 */
+  addFavorite: (path: string, name: string) => void
+  /** お気に入りから削除（パス指定） */
+  removeFavorite: (path: string) => void
+  /** 並び替え */
+  reorderFavorites: (startIndex: number, endIndex: number) => void
+  /** お気に入りか判定 */
+  isFavorite: (path: string) => boolean
+}
+
+// ============================================================
+// 拡張型（新機能用）
+// ============================================================
+
+/**
+ * お気に入りの識別子（拡張版）
  */
 export type FavoriteId = string & { readonly __brand: 'FavoriteId' }
 
@@ -36,14 +93,12 @@ export type FavoriteColor =
  */
 export type FavoriteGroupId = string & { readonly __brand: 'FavoriteGroupId' }
 
-// ============================================================
-// お気に入りアイテム
-// ============================================================
-
 /**
- * お気に入りアイテム
+ * お気に入りアイテム（拡張版）
+ *
+ * グループ化、カラーラベル、カスタムアイコンなどの拡張機能を含む
  */
-export interface FavoriteItem {
+export interface FavoriteItemExtended {
   /** 一意の識別子 */
   id: FavoriteId
   /** ファイル/ディレクトリのパス */
@@ -89,15 +144,15 @@ export interface FavoriteGroup {
 }
 
 // ============================================================
-// 状態管理
+// 拡張版の状態管理
 // ============================================================
 
 /**
- * お気に入り管理の状態
+ * お気に入り管理の状態（拡張版）
  */
-export interface FavoriteState {
+export interface FavoriteStateExtended {
   /** お気に入りアイテムの一覧 */
-  items: FavoriteItem[]
+  items: FavoriteItemExtended[]
   /** お気に入りグループの一覧 */
   groups: FavoriteGroup[]
   /** ドラッグ中のアイテムID */
@@ -109,11 +164,11 @@ export interface FavoriteState {
 }
 
 // ============================================================
-// 入力/操作型
+// 拡張版の入力/操作型
 // ============================================================
 
 /**
- * お気に入り追加の入力
+ * お気に入り追加の入力（拡張版）
  */
 export interface AddFavoriteInput {
   /** ファイル/ディレクトリのパス */
@@ -169,19 +224,17 @@ export interface CreateFavoriteGroupInput {
 }
 
 // ============================================================
-// 永続化
+// 拡張版の永続化
 // ============================================================
 
 /**
- * お気に入りの永続化データ
- *
- * localStorageやファイルに保存する際のフォーマット
+ * お気に入りの永続化データ（拡張版）
  */
 export interface FavoritesPersistData {
   /** バージョン（マイグレーション用） */
   version: number
   /** お気に入りアイテム */
-  items: FavoriteItem[]
+  items: FavoriteItemExtended[]
   /** お気に入りグループ */
   groups: FavoriteGroup[]
   /** 最終更新日時 */
@@ -189,19 +242,9 @@ export interface FavoritesPersistData {
 }
 
 /**
- * お気に入りデータ（永続化用）- 後方互換性のため維持
+ * Rust側からのお気に入りデータ（拡張版、snake_case）
  */
-export interface FavoritesData {
-  /** バージョン（将来のマイグレーション用） */
-  version: number
-  /** お気に入りアイテムの配列 */
-  items: FavoriteItem[]
-}
-
-/**
- * Rust側からのお気に入りデータ（snake_case）
- */
-export interface FavoritesDataRust {
+export interface FavoritesDataExtendedRust {
   version: number
   items: Array<{
     id: string
@@ -245,18 +288,18 @@ export type FavoriteAction =
   | { type: 'TOGGLE_GROUP_COLLAPSE'; payload: FavoriteGroupId }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'LOAD_FAVORITES'; payload: { items: FavoriteItem[]; groups: FavoriteGroup[] } }
+  | { type: 'LOAD_FAVORITES'; payload: { items: FavoriteItemExtended[]; groups: FavoriteGroup[] } }
   | { type: 'SET_DRAGGING'; payload: FavoriteId | null }
   | { type: 'ACCESS_FAVORITE'; payload: FavoriteId }
 
 // ============================================================
-// フック戻り値型
+// 拡張版フック戻り値型
 // ============================================================
 
 /**
- * お気に入り操作のインターフェース
+ * お気に入り操作のインターフェース（拡張版）
  */
-export interface FavoriteActions {
+export interface FavoriteActionsExtended {
   /** お気に入りに追加 */
   addFavorite: (path: string, name: string, type?: FavoriteType) => void
   /** お気に入りから削除（パス指定） */
@@ -280,13 +323,13 @@ export interface FavoriteActions {
 }
 
 /**
- * useFavoritesの戻り値
+ * useFavoritesExtendedの戻り値
  */
-export interface UseFavoritesReturn extends FavoriteState, FavoriteActions {
+export interface UseFavoritesExtendedReturn extends FavoriteStateExtended, FavoriteActionsExtended {
   /** グループ別にソートされたお気に入り */
-  favoritesByGroup: Map<FavoriteGroupId | null, FavoriteItem[]>
+  favoritesByGroup: Map<FavoriteGroupId | null, FavoriteItemExtended[]>
   /** 最近アクセスしたお気に入り */
-  recentFavorites: FavoriteItem[]
+  recentFavorites: FavoriteItemExtended[]
 }
 
 // ============================================================
@@ -315,12 +358,12 @@ export function isFavoriteItem(items: FavoriteItem[], path: string): boolean {
 }
 
 /**
- * グループ別にお気に入りを分類
+ * グループ別にお気に入りを分類（拡張版）
  */
 export function groupFavorites(
-  items: FavoriteItem[]
-): Map<FavoriteGroupId | null, FavoriteItem[]> {
-  const grouped = new Map<FavoriteGroupId | null, FavoriteItem[]>()
+  items: FavoriteItemExtended[]
+): Map<FavoriteGroupId | null, FavoriteItemExtended[]> {
+  const grouped = new Map<FavoriteGroupId | null, FavoriteItemExtended[]>()
 
   for (const item of items) {
     const groupId = item.groupId ?? null
@@ -337,9 +380,9 @@ export function groupFavorites(
 }
 
 /**
- * Rust形式からTypeScript形式に変換
+ * Rust形式からTypeScript形式に変換（拡張版）
  */
-export function convertFromRust(data: FavoritesDataRust): FavoritesPersistData {
+export function convertFromRustExtended(data: FavoritesDataExtendedRust): FavoritesPersistData {
   return {
     version: data.version,
     items: data.items.map(item => ({
