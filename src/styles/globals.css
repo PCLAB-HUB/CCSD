@@ -1,29 +1,49 @@
 @import "tailwindcss";
 
 /* ==========================================
-   Base Layer - 基本スタイル
+   CSS Custom Properties - デザイントークン
+   ライト/ダークモード対応のカラーシステム
    ========================================== */
 @layer base {
   :root {
+    /* システムフォント */
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
     color-scheme: light dark;
 
-    /* カスタムプロパティ - カラー */
-    --color-border-light: #e5e7eb; /* gray-200 */
-    --color-border-dark: #374151; /* gray-700 */
-    --color-bg-card-light: #ffffff;
-    --color-bg-card-dark: #1f2937; /* gray-800 */
-    --color-text-muted-light: #6b7280; /* gray-500 */
-    --color-text-muted-dark: #9ca3af; /* gray-400 */
-    --color-scrollbar-track-light: #f3f4f6; /* gray-100 */
-    --color-scrollbar-track-dark: #1f2937; /* gray-800 */
-    --color-scrollbar-thumb-light: #d1d5db; /* gray-300 */
-    --color-scrollbar-thumb-dark: #4b5563; /* gray-600 */
-    --color-resizer-light: #d1d5db; /* gray-300 */
-    --color-resizer-dark: #4b5563; /* gray-600 */
-    --color-resizer-hover: #3b82f6; /* blue-500 */
+    /* スクロールバー */
+    --color-scrollbar-track: #f3f4f6;
+    --color-scrollbar-thumb: #d1d5db;
+    --color-scrollbar-thumb-hover: #9ca3af;
+
+    /* リサイザー */
+    --color-resizer: #d1d5db;
+    --color-resizer-hover: #3b82f6;
+
+    /* 検索ハイライト */
+    --color-search-bg: rgba(255, 255, 0, 0.4);
+    --color-search-border: rgba(255, 200, 0, 0.6);
+    --color-search-current-bg: rgba(255, 153, 0, 0.6);
+    --color-search-current-border: #ff9900;
+
+    /* カードグロー効果 */
+    --shadow-card-glow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                        0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+
+  .dark {
+    --color-scrollbar-track: #1f2937;
+    --color-scrollbar-thumb: #4b5563;
+    --color-scrollbar-thumb-hover: #6b7280;
+    --color-resizer: #4b5563;
+    --color-search-bg: rgba(255, 255, 0, 0.3);
+    --color-search-border: rgba(255, 200, 0, 0.5);
+    --color-search-current-bg: rgba(255, 153, 0, 0.5);
+    --shadow-card-glow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
+                        0 2px 4px -1px rgba(0, 0, 0, 0.2),
+                        0 0 0 1px rgba(59, 130, 246, 0.2);
   }
 
   body {
@@ -40,231 +60,99 @@
 }
 
 /* ==========================================
-   Components Layer - 再利用可能なコンポーネント
+   Components Layer - 使用されているコンポーネント
    ========================================== */
 @layer components {
-  /* カード / パネル */
-  .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg;
-  }
-
-  .card-bordered {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg;
-  }
-
-  /* モーダル */
-  .modal-overlay {
-    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
-  }
-
-  .modal-content {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl mx-4;
-  }
-
-  .modal-header {
-    @apply flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700;
-  }
-
-  .modal-body {
-    @apply px-6 py-4;
-  }
-
-  .modal-footer {
-    @apply flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700;
-  }
-
-  /* ボタン - 基本スタイル展開版 */
-  .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
-  }
-
-  .btn-primary {
-    @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
-           bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500;
-  }
-
-  .btn-secondary {
-    @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
-           bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 focus:ring-gray-500;
-  }
-
-  .btn-danger {
-    @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
-           bg-red-500 text-white hover:bg-red-600 focus:ring-red-500;
-  }
-
-  .btn-ghost {
-    @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
-           bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300;
-  }
-
-  .btn-sm {
-    @apply px-3 py-1.5 text-sm;
-  }
-
-  .btn-icon {
-    @apply p-2 rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700;
-  }
-
-  /* 入力フィールド */
-  .input {
-    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-           bg-white dark:bg-gray-700 text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
-  }
-
-  /* アラート / 通知 - 基本スタイル展開版 */
-  .alert {
-    @apply p-3 rounded-md border;
-  }
-
-  .alert-error {
-    @apply p-3 rounded-md border
-           bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400;
-  }
-
-  .alert-warning {
-    @apply p-3 rounded-md border
-           bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400;
-  }
-
-  .alert-success {
-    @apply p-3 rounded-md border
-           bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400;
-  }
-
-  .alert-info {
-    @apply p-3 rounded-md border
-           bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400;
-  }
-
-  /* ラベル / バッジ - 基本スタイル展開版 */
-  .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
-  }
-
-  .badge-blue {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-           bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300;
-  }
-
-  .badge-green {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-           bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300;
-  }
-
-  .badge-yellow {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-           bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300;
-  }
-
-  .badge-red {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-           bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300;
-  }
-
-  /* リサイザー */
+  /* リサイザー (Sidebar.tsx) */
   .resizer {
     @apply w-1 flex-shrink-0 cursor-col-resize transition-colors;
-    background-color: var(--color-resizer-light);
+    background-color: var(--color-resizer);
+
+    &:hover {
+      background-color: var(--color-resizer-hover);
+    }
   }
 
-  .resizer:hover {
-    background-color: var(--color-resizer-hover);
-  }
-
-  .dark .resizer {
-    background-color: var(--color-resizer-dark);
-  }
-
-  .dark .resizer:hover {
-    background-color: var(--color-resizer-hover);
-  }
-
-  /* 検索ハイライト (Monaco Editor用) */
+  /* 検索ハイライト (useSearchHighlight.ts - Monaco Editor用) */
   .search-highlight {
-    background-color: rgba(255, 255, 0, 0.4) !important;
-    border: 1px solid rgba(255, 200, 0, 0.6);
+    background-color: var(--color-search-bg) !important;
+    border: 1px solid var(--color-search-border);
     border-radius: 2px;
   }
 
   .search-highlight-current {
-    background-color: rgba(255, 153, 0, 0.6) !important;
-    border: 2px solid #ff9900;
+    background-color: var(--color-search-current-bg) !important;
+    border: 2px solid var(--color-search-current-border);
     border-radius: 2px;
   }
 
-  .dark .search-highlight {
-    background-color: rgba(255, 255, 0, 0.3) !important;
-    border-color: rgba(255, 200, 0, 0.5);
+  /* ステータスバッジ (StatusBadges.tsx, ExportMenu.tsx) - 共通ベース + バリアント */
+  .message-badge-success {
+    @apply text-xs px-2 py-1 rounded
+           bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200;
   }
 
-  .dark .search-highlight-current {
-    background-color: rgba(255, 153, 0, 0.5) !important;
-    border-color: #ff9900;
+  .message-badge-error {
+    @apply text-xs px-2 py-1 rounded
+           bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200;
   }
+
+  .message-badge-warning {
+    @apply text-xs px-2 py-1 rounded
+           bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200;
+  }
+
+  .message-badge-info {
+    @apply text-xs px-2 py-1 rounded
+           bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200;
+  }
+
+  /* 統計カード (StatsCard.tsx) */
+  .stats-card {
+    @apply bg-gray-100 dark:bg-gray-800
+           border border-gray-200 dark:border-gray-700
+           rounded-lg p-4
+           transition-all duration-200 ease-in-out;
+
+    &:hover {
+      @apply shadow-md border-blue-400 dark:border-blue-500;
+      transform: scale(1.01);
+    }
+
+    &:focus-visible {
+      @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
+    }
+  }
+
+  .stats-card-glow:hover {
+    box-shadow: var(--shadow-card-glow);
+  }
+
+  .stats-value {
+    @apply text-2xl font-bold text-gray-900 dark:text-gray-100;
+  }
+
+  .stats-label {
+    @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+  }
+
+  /* 統計アイコン - ベース + カラーバリアント */
+  .stats-icon {
+    @apply w-8 h-8 p-1.5 rounded-lg;
+  }
+
+  .stats-icon-blue   { @apply bg-blue-100   dark:bg-blue-900/50   text-blue-600   dark:text-blue-400; }
+  .stats-icon-green  { @apply bg-green-100  dark:bg-green-900/50  text-green-600  dark:text-green-400; }
+  .stats-icon-yellow { @apply bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400; }
+  .stats-icon-red    { @apply bg-red-100    dark:bg-red-900/50    text-red-600    dark:text-red-400; }
+  .stats-icon-purple { @apply bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400; }
 }
 
 /* ==========================================
-   Utilities Layer - ユーティリティクラス
+   Utilities Layer - カスタムユーティリティ
    ========================================== */
 @layer utilities {
-  /* テキスト */
-  .text-muted {
-    @apply text-gray-500 dark:text-gray-400;
-  }
-
-  .text-muted-darker {
-    @apply text-gray-600 dark:text-gray-300;
-  }
-
-  /* ボーダー */
-  .border-default {
-    @apply border-gray-200 dark:border-gray-700;
-  }
-
-  .divide-default > * + * {
-    @apply border-gray-200 dark:border-gray-700;
-  }
-
-  /* 背景 */
-  .bg-card {
-    @apply bg-white dark:bg-gray-800;
-  }
-
-  .bg-subtle {
-    @apply bg-gray-50 dark:bg-gray-900;
-  }
-
-  .bg-hover {
-    @apply hover:bg-gray-100 dark:hover:bg-gray-700;
-  }
-
-  /* トランジション */
-  .transition-default {
-    @apply transition-colors duration-150;
-  }
-
-  /* スピナーアニメーション */
-  .spinner {
-    @apply animate-spin;
-  }
-
-  /* スクロール */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-  }
-
-  .scrollbar-hide {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* トランケート (複数行) */
+  /* 複数行トランケート (TemplateSelector.tsx, TemplateManager.tsx) */
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -272,21 +160,14 @@
     overflow: hidden;
   }
 
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* モーダルアニメーション */
+  /* モーダルアニメーション (Modal.tsx) */
   .animate-modal-enter {
     animation: modal-enter 0.2s ease-out forwards;
   }
 }
 
 /* ==========================================
-   Animations - キーフレームアニメーション
+   Keyframe Animations
    ========================================== */
 @keyframes modal-enter {
   from {
@@ -299,39 +180,8 @@
   }
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-from-right {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-from-bottom {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 /* ==========================================
-   Scrollbar Styles - スクロールバー
+   Global Scrollbar Styles (WebKit)
    ========================================== */
 ::-webkit-scrollbar {
   width: 8px;
@@ -339,152 +189,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background-color: var(--color-scrollbar-track-light);
-}
-
-.dark ::-webkit-scrollbar-track {
-  background-color: var(--color-scrollbar-track-dark);
+  background-color: var(--color-scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-scrollbar-thumb-light);
+  background-color: var(--color-scrollbar-thumb);
   border-radius: 4px;
-}
 
-.dark ::-webkit-scrollbar-thumb {
-  background-color: var(--color-scrollbar-thumb-dark);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: #9ca3af; /* gray-400 */
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background-color: #6b7280; /* gray-500 */
-}
-
-/* ==========================================
-   Stats Panel - 統計パネルスタイル
-   ========================================== */
-
-/* 折りたたみアニメーション用コンテナ */
-.stats-panel-content {
-  overflow: hidden;
-  transition: max-height 300ms ease-in-out, opacity 200ms ease-in-out;
-}
-
-.stats-panel-content.collapsed {
-  max-height: 0;
-  opacity: 0;
-}
-
-.stats-panel-content.expanded {
-  max-height: 500px; /* コンテンツに十分な高さ */
-  opacity: 1;
-}
-
-/* 統計カード */
-.stats-card {
-  @apply bg-gray-100 dark:bg-gray-800
-         border border-gray-200 dark:border-gray-700
-         rounded-lg p-4
-         transition-all duration-200 ease-in-out;
-}
-
-.stats-card:hover {
-  @apply shadow-md border-blue-400 dark:border-blue-500;
-  transform: scale(1.01);
-}
-
-.stats-card:focus-visible {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
-}
-
-/* 統計パネルヘッダー（折りたたみトグル） */
-.stats-panel-header {
-  @apply flex items-center justify-between
-         px-4 py-3
-         bg-gray-100 dark:bg-gray-800
-         border-t border-gray-200 dark:border-gray-700
-         cursor-pointer select-none
-         transition-colors duration-150;
-}
-
-.stats-panel-header:hover {
-  @apply bg-gray-200 dark:bg-gray-700;
-}
-
-.stats-panel-header:focus-visible {
-  @apply outline-none ring-2 ring-inset ring-blue-500;
-}
-
-/* 展開/折りたたみアイコン */
-.stats-chevron {
-  @apply w-4 h-4 transition-transform duration-300 ease-in-out;
-}
-
-.stats-chevron.expanded {
-  transform: rotate(180deg);
-}
-
-/* 統計値表示 */
-.stats-value {
-  @apply text-2xl font-bold text-gray-900 dark:text-gray-100;
-  /*
-   * カウントアップアニメーション（将来拡張用）:
-   * - react-countup または framer-motion を使用
-   * - useEffect で値変更を検知してアニメーション開始
-   * - duration: 500ms, easing: easeOut
-   * 例: <CountUp end={value} duration={0.5} />
-   */
-}
-
-.stats-label {
-  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
-}
-
-/* 統計アイコン */
-.stats-icon {
-  @apply w-8 h-8 p-1.5 rounded-lg;
-}
-
-.stats-icon-blue {
-  @apply bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400;
-}
-
-.stats-icon-green {
-  @apply bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400;
-}
-
-.stats-icon-yellow {
-  @apply bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400;
-}
-
-.stats-icon-red {
-  @apply bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400;
-}
-
-.stats-icon-purple {
-  @apply bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400;
-}
-
-/* 統計グリッドレイアウト */
-.stats-grid {
-  @apply grid gap-4 p-4;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-/* サブトルグロー効果（ホバー時） */
-.stats-card-glow:hover {
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(59, 130, 246, 0.1);
-}
-
-.dark .stats-card-glow:hover {
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.3),
-    0 2px 4px -1px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(59, 130, 246, 0.2);
+  &:hover {
+    background-color: var(--color-scrollbar-thumb-hover);
+  }
 }
