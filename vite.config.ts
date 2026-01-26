@@ -5,6 +5,8 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,
+  // マルチページアプリケーションとして設定（開発モードでも/preview.htmlをサポート）
+  appType: 'mpa',
   server: {
     port: 1420,
     strictPort: true,
