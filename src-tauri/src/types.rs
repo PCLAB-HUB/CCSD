@@ -110,3 +110,39 @@ pub struct ZipFileInfo {
     /// ディレクトリかどうか
     pub is_directory: bool,
 }
+
+/// 検索置換結果
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ReplaceResult {
+    /// 成功したかどうか
+    pub success: bool,
+    /// 置換した回数
+    pub replaced_count: usize,
+    /// 置換後の内容
+    pub new_content: String,
+    /// エラーメッセージ（エラー時のみ）
+    pub error: Option<String>,
+}
+
+impl ReplaceResult {
+    /// 成功結果を作成
+    pub fn success(replaced_count: usize, new_content: String) -> Self {
+        Self {
+            success: true,
+            replaced_count,
+            new_content,
+            error: None,
+        }
+    }
+
+    /// エラー結果を作成
+    pub fn error(message: impl Into<String>) -> Self {
+        Self {
+            success: false,
+            replaced_count: 0,
+            new_content: String::new(),
+            error: Some(message.into()),
+        }
+    }
+}

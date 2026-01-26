@@ -3,12 +3,13 @@
 //! ファイルツリーの取得、ファイルの読み書き、検索などの機能を提供します。
 
 use crate::error::AppResult;
-use crate::types::{FileContent, FileNode};
+use crate::types::{FileContent, FileNode, ReplaceResult};
 use crate::utils::{
     get_claude_dir, is_allowed_extension, is_excluded_path, validate_path_security,
     ALLOWED_EXTENSIONS, EXCLUDED_DIRS,
 };
 use log::info;
+use regex::{Regex, RegexBuilder};
 use std::cmp::Ordering;
 use std::fs;
 use std::path::PathBuf;
@@ -165,7 +166,10 @@ pub fn write_file(path: String, content: String) -> AppResult<()> {
 
     // パスを正規化（~/.claude/ プレフィックスをサポート）
     let path_buf = if path.starts_with("~/.claude/") {
-        claude_dir.join(path.strip_prefix("~/.claude/").unwrap())
+        match path.strip_prefix("~/.claude/") {
+            Some(suffix) => claude_dir.join(suffix),
+            None => return Err("パスの正規化に失敗しました: ~/.claude/ プレフィックスの処理エラー".to_string()),
+        }
     } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
         PathBuf::from(&path)
     } else {
@@ -199,11 +203,14 @@ pub fn create_file(path: String, content: String) -> AppResult<()> {
 
     // パスを正規化
     let path_buf = if path.starts_with("~/.claude/") {
-        claude_dir.join(path.strip_prefix("~/.claude/").unwrap())
+        match path.strip_prefix("~/.claude/") {
+            Some(suffix) => claude_dir.join(suffix),
+            None => return Err("パスの正規化に失敗しました: ~/.claude/ プレフィックスの処理エラー".to_string()),
+        }
     } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
         PathBuf::from(&path)
     } else {
-        return Err("Access denied: only files in ~/.claude/ are allowed".to_string());
+        return Err("アクセス拒否: ~/.claude/ 配下のファイルのみ許可されています".to_string());
     };
 
     // セキュリティチェック
@@ -292,4 +299,141 @@ pub fn search_files(query: String) -> AppResult<Vec<FileContent>> {
     }
 
     Ok(results)
+}
+
+/// ファイル内で検索置換を実行
+///
+/// # Arguments
+///
+/// * `path` - 対象ファイルのパス
+/// * `search` - 検索文字列（またはパターン）
+/// * `replace` - 置換文字列
+/// * `case_sensitive` - 大文字小文字を区別するか
+/// * `whole_word` - 単語全体にマッチさせるか
+/// * `use_regex` - 正規表現を使用するか
+/// * `replace_all` - 全ての出現を置換するか（falseの場合は最初の1つのみ）
+///
+/// # Returns
+///
+/// 置換結果（成功/失敗、置換回数、新しい内容）
+///
+/// # Security
+///
+/// ~/.claude/ 配下のファイルのみアクセス可能です。
+/// 置換前に自動的にバックアップが作成されます。
+#[tauri::command]
+pub fn search_and_replace_in_file(
+    path: String,
+    search: String,
+    replace: String,
+    case_sensitive: bool,
+    whole_word: bool,
+    use_regex: bool,
+    replace_all: bool,
+) -> AppResult<ReplaceResult> {
+    let claude_dir = get_claude_dir().map_err(|e| e.to_string())?;
+
+    // パスを正規化
+    let path_buf = if path.starts_with("~/.claude/") {
+        match path.strip_prefix("~/.claude/") {
+            Some(suffix) => claude_dir.join(suffix),
+            None => return Ok(ReplaceResult::error("パスの正規化に失敗しました: ~/.claude/ プレフィックスの処理エラー")),
+        }
+    } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
+        PathBuf::from(&path)
+    } else {
+        PathBuf::from(&path)
+    };
+
+    // セキュリティチェック
+    if let Err(e) = validate_path_security(&path_buf, &claude_dir) {
+        return Ok(ReplaceResult::error(e.to_string()));
+    }
+
+    // ファイルが存在するか確認
+    if !path_buf.exists() {
+        return Ok(ReplaceResult::error("File not found"));
+    }
+
+    // ファイル内容を読み込む
+    let content = match fs::read_to_string(&path_buf) {
+        Ok(c) => c,
+        Err(e) => return Ok(ReplaceResult::error(format!("Failed to read file: {e}"))),
+    };
+
+    // 検索パターンを構築
+    let pattern = build_search_pattern(&search, case_sensitive, whole_word, use_regex);
+    let regex = match pattern {
+        Ok(r) => r,
+        Err(e) => return Ok(ReplaceResult::error(format!("Invalid search pattern: {e}"))),
+    };
+
+    // マッチ数をカウント
+    let match_count = regex.find_iter(&content).count();
+
+    if match_count == 0 {
+        return Ok(ReplaceResult::success(0, content));
+    }
+
+    // 置換を実行
+    let (new_content, replaced_count) = if replace_all {
+        let new_content = regex.replace_all(&content, replace.as_str()).to_string();
+        (new_content, match_count)
+    } else {
+        let new_content = regex.replace(&content, replace.as_str()).to_string();
+        (new_content, 1)
+    };
+
+    // 内容が変更された場合のみバックアップと書き込み
+    if new_content != content {
+        // バックアップを作成
+        let normalized_path = path_buf.to_string_lossy().to_string();
+        if let Err(e) = crate::commands::backup::create_backup(&normalized_path) {
+            return Ok(ReplaceResult::error(format!("Failed to create backup: {e}")));
+        }
+
+        // ファイルに書き込み
+        if let Err(e) = fs::write(&path_buf, &new_content) {
+            return Ok(ReplaceResult::error(format!("Failed to write file: {e}")));
+        }
+
+        info!(
+            "Replaced {} occurrence(s) in file: {}",
+            replaced_count,
+            path_buf.display()
+        );
+    }
+
+    Ok(ReplaceResult::success(replaced_count, new_content))
+}
+
+/// 検索パターンを構築
+///
+/// オプションに応じて正規表現パターンを構築します。
+fn build_search_pattern(
+    search: &str,
+    case_sensitive: bool,
+    whole_word: bool,
+    use_regex: bool,
+) -> Result<Regex, regex::Error> {
+    let pattern = if use_regex {
+        // 正規表現モード：そのまま使用
+        if whole_word {
+            format!(r"\b(?:{})\b", search)
+        } else {
+            search.to_string()
+        }
+    } else {
+        // リテラルモード：特殊文字をエスケープ
+        let escaped = regex::escape(search);
+        if whole_word {
+            format!(r"\b{}\b", escaped)
+        } else {
+            escaped
+        }
+    };
+
+    RegexBuilder::new(&pattern)
+        .case_insensitive(!case_sensitive)
+        .build()
 }
