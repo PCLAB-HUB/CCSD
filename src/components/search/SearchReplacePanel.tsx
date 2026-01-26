@@ -47,6 +47,8 @@ interface SearchReplacePanelProps {
   options: SearchReplaceOptions
   /** 置換処理中かどうか */
   isReplacing: boolean
+  /** エラーメッセージ */
+  error?: string | null
   /** 検索クエリ変更コールバック */
   onSearchChange: (query: string) => void
   /** 置換テキスト変更コールバック */
@@ -61,6 +63,8 @@ interface SearchReplacePanelProps {
   onReplaceCurrent: () => void
   /** 全て置換 */
   onReplaceAll: () => void
+  /** エラーをクリア */
+  onClearError?: () => void
 }
 
 /**
@@ -110,6 +114,7 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
   currentMatchIndex,
   options,
   isReplacing,
+  error,
   onSearchChange,
   onReplaceTextChange,
   onOptionsChange,
@@ -117,6 +122,7 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
   onFindPrev,
   onReplaceCurrent,
   onReplaceAll,
+  onClearError,
 }) => {
   // 置換パネルの展開状態
   const [isExpanded, setIsExpanded] = useState(false)
@@ -192,8 +198,11 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
     }
   }, [matches, currentMatchIndex])
 
-  // プレビュー表示の条件: 置換モード展開中 && 置換テキストが入力されている && マッチがある
-  const showPreviewSection = isExpanded && replaceText.length > 0 && matches.length > 0
+  // プレビュー表示の条件: 置換モード展開中 && 置換テキストが入力されている && マッチがある && エラーがない
+  const showPreviewSection = isExpanded && replaceText.length > 0 && matches.length > 0 && !error
+
+  // エラーがある場合は置換ボタンを無効化
+  const hasError = !!error
 
   // パネルが閉じている場合は何も表示しない
   if (!isOpen) {
@@ -236,11 +245,23 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
+                onChange={(e) => {
+                  onSearchChange(e.target.value)
+                  // 入力時にエラーをクリア
+                  if (onClearError && error) {
+                    onClearError()
+                  }
+                }}
                 onKeyDown={handleSearchKeyDown}
                 placeholder="検索..."
                 aria-label="検索文字列"
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-invalid={hasError}
+                aria-describedby={hasError ? 'search-error' : undefined}
+                className={`w-full pl-8 pr-3 py-1.5 text-sm bg-white dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:border-transparent ${
+                  hasError
+                    ? 'border-red-500 dark:border-red-500 focus:ring-red-500'
+                    : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                }`}
               />
             </div>
 
@@ -313,6 +334,29 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
             </button>
           </div>
 
+          {/* エラーメッセージ表示エリア */}
+          {error && (
+            <div
+              id="search-error"
+              role="alert"
+              className="flex items-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md text-red-700 dark:text-red-400 text-sm"
+            >
+              <Icon name="warning" className="size-4 shrink-0" />
+              <span className="flex-1">{error}</span>
+              {onClearError && (
+                <button
+                  type="button"
+                  onClick={onClearError}
+                  className="p-0.5 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                  title="エラーを閉じる"
+                  aria-label="エラーメッセージを閉じる"
+                >
+                  <Icon name="close" className="size-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+
           {/* 置換行（展開時のみ表示） */}
           {isExpanded && (
             <div id="replace-section" className="flex items-center gap-2">
@@ -341,9 +385,9 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
                 <button
                   type="button"
                   onClick={onReplaceCurrent}
-                  disabled={matches.length === 0 || isReplacing}
+                  disabled={matches.length === 0 || isReplacing || hasError}
                   className="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                  title="現在のマッチを置換 (Enter)"
+                  title={hasError ? 'エラーを解決してください' : '現在のマッチを置換 (Enter)'}
                 >
                   {isReplacing ? (
                     <Icon name="spinner" className="size-4 animate-spin" />
@@ -354,9 +398,9 @@ const SearchReplacePanel: FC<SearchReplacePanelProps> = ({
                 <button
                   type="button"
                   onClick={onReplaceAll}
-                  disabled={matches.length === 0 || isReplacing}
+                  disabled={matches.length === 0 || isReplacing || hasError}
                   className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                  title="全て置換 (Shift+Enter)"
+                  title={hasError ? 'エラーを解決してください' : '全て置換 (Shift+Enter)'}
                 >
                   {isReplacing ? (
                     <Icon name="spinner" className="size-4 animate-spin" />
