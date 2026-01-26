@@ -122,12 +122,16 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={exporting}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        aria-controls="export-menu"
+        aria-label={exporting ? 'エクスポート中' : 'エクスポートメニューを開く'}
         className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50"
         title="エクスポート"
       >
         {exporting ? (
           <>
-            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -146,7 +150,7 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
           </>
         ) : (
           <>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -161,7 +165,7 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
 
       {/* 進捗表示 */}
       {progress && (
-        <div className="absolute top-full left-0 right-0 mt-1 px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-md whitespace-nowrap z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 px-3 py-2 message-badge-info whitespace-nowrap z-50">
           処理中: {progress.current} / {progress.total} ファイル
         </div>
       )}
@@ -169,10 +173,8 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
       {/* メッセージ表示 */}
       {message && (
         <div
-          className={`absolute top-full left-0 right-0 mt-1 px-3 py-2 text-xs rounded-md whitespace-nowrap z-50 ${
-            message.type === 'success'
-              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-              : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+          className={`absolute top-full left-0 right-0 mt-1 px-3 py-2 whitespace-nowrap z-50 ${
+            message.type === 'success' ? 'message-badge-success' : 'message-badge-error'
           }`}
         >
           {message.text}
@@ -181,14 +183,21 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
 
       {/* ドロップダウンメニュー */}
       {isOpen && !exporting && (
-        <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
+        <div
+          id="export-menu"
+          role="menu"
+          aria-label="エクスポートオプション"
+          className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50"
+        >
           {/* 単一ファイルエクスポート */}
           <button
+            role="menuitem"
             onClick={handleExportFile}
             disabled={!selectedFilePath}
-            className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed border-b border-gray-100 dark:border-gray-700 flex items-center gap-3"
+            aria-label={selectedFilePath ? `${selectedFileName}をエクスポート` : 'ファイルが選択されていません'}
+            className="w-full px-4 py-2.5 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed border-b border-gray-100 dark:border-gray-700 flex items-center gap-3 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -206,10 +215,12 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
 
           {/* 全設定ZIPエクスポート */}
           <button
+            role="menuitem"
             onClick={handleExportAllZip}
-            className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            aria-label="全設定をZIPファイルでエクスポート"
+            className="w-full px-4 py-2.5 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

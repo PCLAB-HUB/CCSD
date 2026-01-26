@@ -1,5 +1,8 @@
 import { FC, useState, useEffect, useCallback } from 'react'
-import { FileNode, getBackups, restoreBackup, isTauri } from '../../hooks/useTauri'
+import { getBackups, restoreBackup, isTauri } from '../../hooks/useTauri'
+import type { FileNode } from '../../types'
+import Modal from '../common/Modal'
+import Icon from '../common/Icon'
 
 interface BackupListProps {
   isOpen: boolean
@@ -186,42 +189,33 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
     return backupName.replace(/\.backup\.\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/, '')
   }
 
-  if (!isOpen) return null
+  const footer = (
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-gray-500 dark:text-gray-400">
+        {backups.length > 0 && `${backups.length}件のバックアップ`}
+      </span>
+      <button
+        onClick={onClose}
+        className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      >
+        閉じる
+      </button>
+    </div>
+  )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* オーバーレイ */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* モーダル */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col m-4">
-        {/* ヘッダー */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            バックアップ一覧
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            title="閉じる"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* コンテンツ */}
-        <div className="flex-1 overflow-y-auto p-6">
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="バックアップ一覧"
+        size="md"
+        footer={footer}
+        contentClassName="p-6"
+      >
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <svg className="w-8 h-8 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
+            <div className="flex items-center justify-center py-12" role="status" aria-label="バックアップを読み込み中">
+              <Icon name="spinner" className="size-8 animate-spin text-blue-500" />
               <span className="ml-3 text-gray-500 dark:text-gray-400">読み込み中...</span>
             </div>
           ) : error ? (
@@ -230,22 +224,21 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
               <button
                 onClick={loadBackups}
                 className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                aria-label="バックアップ一覧の読み込みを再試行"
               >
                 再試行
               </button>
             </div>
           ) : backups.length === 0 ? (
             <div className="text-center py-12">
-              <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
+              <Icon name="archive" className="size-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
               <p className="text-gray-500 dark:text-gray-400">バックアップがありません</p>
               <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                 ファイルを保存するとバックアップが自動作成されます
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {/* 30日以上古いバックアップの警告 */}
               {backups.some(b => b.isOld) && (
                 <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
@@ -271,9 +264,7 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
+                      <Icon name="file" className="size-4 text-gray-400 flex-shrink-0" />
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {getFileNameFromBackup(item.node.name)}
                       </span>
@@ -299,6 +290,7 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
                         }}
                         className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         title="現在のファイルと比較"
+                        aria-label={`${getFileNameFromBackup(item.node.name)}を現在のファイルと比較`}
                       >
                         比較
                       </button>
@@ -306,6 +298,7 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
                     <button
                       onClick={() => setConfirmRestore(item)}
                       className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                      aria-label={`${getFileNameFromBackup(item.node.name)}を復元`}
                     >
                       復元
                     </button>
@@ -314,33 +307,44 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
               ))}
             </div>
           )}
-        </div>
-
-        {/* フッター */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {backups.length > 0 && `${backups.length}件のバックアップ`}
-          </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            閉じる
-          </button>
-        </div>
-      </div>
+      </Modal>
 
       {/* 復元確認ダイアログ */}
-      {confirmRestore && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setConfirmRestore(null)}
-          />
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 m-4 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              復元の確認
-            </h3>
+      <Modal
+        isOpen={!!confirmRestore}
+        onClose={() => setConfirmRestore(null)}
+        title="復元の確認"
+        size="sm"
+        zIndex={60}
+        footer={
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setConfirmRestore(null)}
+              disabled={restoring}
+              className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={() => confirmRestore && handleRestore(confirmRestore)}
+              disabled={restoring}
+              className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {restoring ? (
+                <>
+                  <Icon name="spinner" className="size-4 animate-spin" />
+                  復元中...
+                </>
+              ) : (
+                '復元する'
+              )}
+            </button>
+          </div>
+        }
+        contentClassName="p-6"
+      >
+        {confirmRestore && (
+          <>
             <p className="text-gray-600 dark:text-gray-300 mb-2">
               以下のバックアップを復元しますか？
             </p>
@@ -352,39 +356,13 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
                 {confirmRestore.displayDate}
               </p>
             </div>
-            <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4">
+            <p className="text-sm text-yellow-600 dark:text-yellow-400">
               現在のファイルは上書きされます。この操作は取り消せません。
             </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmRestore(null)}
-                disabled={restoring}
-                className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={() => handleRestore(confirmRestore)}
-                disabled={restoring}
-                className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {restoring ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    復元中...
-                  </>
-                ) : (
-                  '復元する'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </>
+        )}
+      </Modal>
+    </>
   )
 }
 

@@ -54,7 +54,7 @@ const EmptyState: FC = memo(() => (
   <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900">
     <div className="text-center text-gray-500 dark:text-gray-400">
       <svg
-        className="w-16 h-16 mx-auto mb-4 opacity-50"
+        className="size-16 mx-auto mb-4 opacity-50"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -80,20 +80,30 @@ interface FileTabProps {
   schemaType: SchemaFileType | undefined
 }
 
-const FileTab: FC<FileTabProps> = memo(({ selectedFile, schemaType }) => (
-  <div className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium">{selectedFile.name}</span>
-      {selectedFile.content !== selectedFile.originalContent && (
-        <span className="w-2 h-2 bg-yellow-500 rounded-full" title="未保存の変更" />
-      )}
-      {schemaType && <SchemaTypeBadge schemaType={schemaType} />}
+const FileTab: FC<FileTabProps> = memo(({ selectedFile, schemaType }) => {
+  const hasUnsavedChanges = selectedFile.content !== selectedFile.originalContent
+  return (
+    <div className="flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">{selectedFile.name}</span>
+        {hasUnsavedChanges && (
+          <span
+            className="size-2 bg-yellow-500 rounded-full"
+            title="未保存の変更"
+            aria-label="未保存の変更があります"
+            role="status"
+          >
+            <span className="sr-only">未保存の変更があります</span>
+          </span>
+        )}
+        {schemaType && <SchemaTypeBadge schemaType={schemaType} />}
+      </div>
+      <div className="ml-auto text-xs text-gray-500 dark:text-gray-400">
+        {selectedFile.path}
+      </div>
     </div>
-    <div className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-      {selectedFile.path}
-    </div>
-  </div>
-))
+  )
+})
 
 FileTab.displayName = 'FileTab'
 
@@ -101,7 +111,7 @@ FileTab.displayName = 'FileTab'
 const ReadOnlyBanner: FC = memo(() => (
   <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
     <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300">
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -119,7 +129,7 @@ ReadOnlyBanner.displayName = 'ReadOnlyBanner'
 /** ローディングスピナー */
 const LoadingSpinner: FC = memo(() => (
   <div className="h-full flex items-center justify-center bg-white dark:bg-gray-900">
-    <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+    <div className="size-6 animate-spin border-2 border-blue-500 border-t-transparent rounded-full" />
   </div>
 ))
 

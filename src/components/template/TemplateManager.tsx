@@ -173,6 +173,7 @@ const TemplateManager: FC<TemplateManagerProps> = ({
                       onClick={() => handleEdit(template)}
                       className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-md transition-colors"
                       title="編集"
+                      aria-label={`${template.name}を編集`}
                     >
                       <Icon name="edit" className="size-5" />
                     </button>
@@ -181,6 +182,8 @@ const TemplateManager: FC<TemplateManagerProps> = ({
                       disabled={deleting === template.id}
                       className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors disabled:opacity-50"
                       title="削除"
+                      aria-label={deleting === template.id ? `${template.name}を削除中` : `${template.name}を削除`}
+                      aria-busy={deleting === template.id}
                     >
                       {deleting === template.id ? (
                         <Icon name="spinner" className="size-5 animate-spin" />

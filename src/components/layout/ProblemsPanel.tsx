@@ -1,6 +1,7 @@
 import { FC, memo, useState, useCallback } from 'react'
 import type { ValidationError, ValidationSeverity } from '../../types'
 import { getSeverityColor, getSeverityIcon } from '../../utils/errorMessages'
+import { Icon } from '../common'
 
 /** 重大度に応じたスタイル設定 */
 const severityStyles: Record<ValidationSeverity, {
@@ -94,15 +95,10 @@ const ProblemsPanel: FC<ProblemsPanelProps> = memo(({
             )}
           </div>
         </div>
-        <svg
+        <Icon
+          name="chevronDown"
           className={`size-4 text-gray-600 dark:text-gray-400 transition-transform ${showPanel ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        />
       </div>
 
       {/* Problems List */}

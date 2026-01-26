@@ -207,39 +207,46 @@ const TemplateEditor: FC<TemplateEditorProps> = ({
       <div className="p-6 overflow-y-auto max-h-[calc(80vh-200px)]">
         {/* 基本情報タブ */}
         {activeTab === 'basic' && (
-          <div className="space-y-5">
+          <div className="space-y-5" role="tabpanel" aria-labelledby="template-tab-basic">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                テンプレート名 <span className="text-red-500">*</span>
+              <label htmlFor="template-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                テンプレート名 <span className="text-red-500" aria-hidden="true">*</span>
+                <span className="sr-only">（必須）</span>
               </label>
               <input
+                id="template-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="例: マイカスタムエージェント"
+                aria-required="true"
                 className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                説明 <span className="text-red-500">*</span>
+              <label htmlFor="template-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                説明 <span className="text-red-500" aria-hidden="true">*</span>
+                <span className="sr-only">（必須）</span>
               </label>
               <textarea
+                id="template-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="このテンプレートの用途を説明してください"
                 rows={2}
+                aria-required="true"
                 className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label htmlFor="template-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   カテゴリ
                 </label>
                 <select
+                  id="template-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -253,10 +260,11 @@ const TemplateEditor: FC<TemplateEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label htmlFor="template-icon" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   アイコン
                 </label>
                 <select
+                  id="template-icon"
                   value={icon}
                   onChange={(e) => setIcon(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -271,17 +279,21 @@ const TemplateEditor: FC<TemplateEditorProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                デフォルトファイル名 <span className="text-red-500">*</span>
+              <label htmlFor="template-filename" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                デフォルトファイル名 <span className="text-red-500" aria-hidden="true">*</span>
+                <span className="sr-only">（必須）</span>
               </label>
               <input
+                id="template-filename"
                 type="text"
                 value={defaultFileName}
                 onChange={(e) => setDefaultFileName(e.target.value)}
                 placeholder="例: {{name}}.md"
+                aria-required="true"
+                aria-describedby="template-filename-hint"
                 className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p id="template-filename-hint" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 フィールド名を {'{{field_name}}'} の形式で使用できます
               </p>
             </div>
@@ -298,12 +310,13 @@ const TemplateEditor: FC<TemplateEditorProps> = ({
 
         {/* テンプレート本文タブ */}
         {activeTab === 'content' && (
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          <div role="tabpanel" aria-labelledby="template-tab-content">
+            <label htmlFor="template-content" className="text-sm text-gray-500 dark:text-gray-400 mb-3 block">
               テンプレートの本文を入力してください。
               フィールド名を {'{{field_name}}'} の形式で埋め込むことができます。
-            </p>
+            </label>
             <textarea
+              id="template-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="テンプレートの内容を入力..."
