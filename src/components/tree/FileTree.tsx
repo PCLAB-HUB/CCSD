@@ -1,12 +1,15 @@
 import { memo, useState, useCallback } from 'react'
 import type { FileNode } from '../../types'
 import { Icon } from '../common'
+import { PinButton } from '../favorites'
 
 interface FileTreeProps {
   nodes: FileNode[]
   onFileSelect: (path: string, name: string) => void
   selectedPath?: string
   level?: number
+  isFavorite?: (path: string) => boolean
+  onToggleFavorite?: (path: string, name: string) => void
 }
 
 const FileTree = memo<FileTreeProps>(({
@@ -14,6 +17,8 @@ const FileTree = memo<FileTreeProps>(({
   onFileSelect,
   selectedPath,
   level = 0,
+  isFavorite,
+  onToggleFavorite,
 }) => {
   // nodesが未定義または空の場合のハンドリング
   if (!nodes || nodes.length === 0) {
@@ -36,6 +41,8 @@ const FileTree = memo<FileTreeProps>(({
           onFileSelect={onFileSelect}
           selectedPath={selectedPath}
           level={level}
+          isFavorite={isFavorite}
+          onToggleFavorite={onToggleFavorite}
         />
       ))}
     </div>
@@ -49,6 +56,8 @@ interface TreeNodeProps {
   onFileSelect: (path: string, name: string) => void
   selectedPath?: string
   level: number
+  isFavorite?: (path: string) => boolean
+  onToggleFavorite?: (path: string, name: string) => void
 }
 
 const TreeNode = memo<TreeNodeProps>(({
@@ -56,11 +65,14 @@ const TreeNode = memo<TreeNodeProps>(({
   onFileSelect,
   selectedPath,
   level,
+  isFavorite,
+  onToggleFavorite,
 }) => {
   const [isExpanded, setIsExpanded] = useState(level < 2)
   const isSelected = node.path === selectedPath
   const paddingLeft = level * 16 + 8
   const isDirectory = node.file_type === 'directory'
+  const isPinned = isFavorite ? isFavorite(node.path) : false
 
   // handleClickをuseCallbackでメモ化
   const handleClick = useCallback(() => {
@@ -86,6 +98,13 @@ const TreeNode = memo<TreeNodeProps>(({
       }
     }
   }, [handleClick, isDirectory, isExpanded])
+
+  // お気に入りトグルハンドラー
+  const handleToggleFavorite = useCallback(() => {
+    if (onToggleFavorite) {
+      onToggleFavorite(node.path, node.name)
+    }
+  }, [onToggleFavorite, node.path, node.name])
 
   const getChevronIcon = () => {
     if (node.file_type === 'directory') {
@@ -123,7 +142,7 @@ const TreeNode = memo<TreeNodeProps>(({
         aria-selected={isSelected}
         aria-label={isDirectory ? `${node.name} フォルダ${isExpanded ? '、展開中' : '、折りたたみ中'}` : `${node.name} ファイル`}
         tabIndex={0}
-        className={`flex items-center gap-1 py-1 px-2 cursor-pointer rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${
+        className={`group flex items-center gap-1 py-1 px-2 cursor-pointer rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${
           isSelected ? 'bg-blue-100 dark:bg-blue-900' : ''
         }`}
         style={{ paddingLeft }}
@@ -132,7 +151,14 @@ const TreeNode = memo<TreeNodeProps>(({
       >
         <span className="w-4 flex-shrink-0" aria-hidden="true">{getChevronIcon()}</span>
         <span className="flex-shrink-0" aria-hidden="true">{getFileIcon()}</span>
-        <span className="text-sm truncate">{node.name}</span>
+        <span className="text-sm truncate flex-1">{node.name}</span>
+        {!isDirectory && onToggleFavorite && (
+          <PinButton
+            isPinned={isPinned}
+            onToggle={handleToggleFavorite}
+            size="sm"
+          />
+        )}
       </div>
       {isDirectory && isExpanded && node.children && (
         <FileTree
@@ -140,6 +166,8 @@ const TreeNode = memo<TreeNodeProps>(({
           onFileSelect={onFileSelect}
           selectedPath={selectedPath}
           level={level + 1}
+          isFavorite={isFavorite}
+          onToggleFavorite={onToggleFavorite}
         />
       )}
     </div>
