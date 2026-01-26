@@ -300,26 +300,31 @@ function App() {
     resetSearch()
   }, [selectFile, setHighlight, clearHighlight, resetSearch])
 
-  // selectedFileが変更されたらタブを開く
+  // selectedFileが変更されたらタブを開く（パスが変わったときのみ）
   useEffect(() => {
     if (selectedFile) {
       openTab(selectedFile.path, selectedFile.name, selectedFile.content)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentの変更時には実行不要、パス/名前変更時のみ
   }, [selectedFile?.path, selectedFile?.name, openTab])
 
-  // selectedFileの内容が変更されたらタブの内容も更新
-  useEffect(() => {
-    if (selectedFile && activeTabId === selectedFile.path) {
-      updateTabContent(selectedFile.path, selectedFile.content)
-    }
-  }, [selectedFile?.content, selectedFile?.path, activeTabId, updateTabContent])
-
-  // ファイル保存後にタブを保存済み状態にマーク
+  // ファイル保存後（originalContentが更新されたとき）にタブを保存済み状態にマーク
   useEffect(() => {
     if (selectedFile && selectedFile.content === selectedFile.originalContent) {
       markTabAsSaved(selectedFile.path)
     }
-  }, [selectedFile?.originalContent, selectedFile?.content, selectedFile?.path, markTabAsSaved])
+  }, [selectedFile, markTabAsSaved])
+
+  /**
+   * コンテンツ変更ハンドラ
+   * ファイルマネージャーとタブエディタの両方を更新
+   */
+  const handleContentChange = useCallback((newContent: string) => {
+    updateContent(newContent)
+    if (selectedFile) {
+      updateTabContent(selectedFile.path, newContent)
+    }
+  }, [updateContent, updateTabContent, selectedFile])
 
   /**
    * タブ選択時のハンドラ
@@ -509,7 +514,7 @@ function App() {
         />
         <MainArea
           selectedFile={selectedFile}
-          onContentChange={updateContent}
+          onContentChange={handleContentChange}
           readOnly={readOnly}
           darkMode={darkMode}
           searchHighlight={searchHighlight}
