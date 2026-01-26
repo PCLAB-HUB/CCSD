@@ -35,7 +35,11 @@ export {
   writeFile,
   createFile,
   searchFiles,
+  searchAndReplaceInFile,
 } from './files'
+
+// 検索・置換の型
+export type { ReplaceResult, SearchReplaceOptions } from './files'
 
 // バックアップ操作
 export {

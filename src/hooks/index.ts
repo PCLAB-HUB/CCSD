@@ -15,6 +15,15 @@ export { useFileManager } from './useFileManager'
 // 検索機能
 export { useSearch } from './useSearch'
 
+// 検索・置換機能
+export { useSearchReplace } from './useSearchReplace'
+export type {
+  SearchMatch,
+  SearchReplaceOptions,
+  ReplaceResult,
+  ReplacePreview,
+} from './useSearchReplace'
+
 // 差分表示
 export { useDiff } from './useDiff'
 

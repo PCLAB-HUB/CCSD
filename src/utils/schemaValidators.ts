@@ -3,7 +3,7 @@
  * YAMLフロントマターをパースしてagents/skillsスキーマを検証
  */
 
-import type { ValidationError, ValidationSeverity } from './errorMessages'
+import type { ValidationError, ValidationSeverity } from '../types'
 
 /** エージェントスキーマ */
 export interface AgentSchema {
@@ -161,6 +161,7 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
 
 /**
  * フロントマター内のフィールド位置を検索
+ * 注意: fieldNameは信頼できる値（内部定義のフィールド名）のみを渡すこと
  */
 function findFieldLine(
   content: string,
@@ -169,10 +170,12 @@ function findFieldLine(
   endLine: number
 ): number {
   const lines = content.split('\n')
+  // フィールド名をエスケープして正規表現インジェクションを防止
+  const escapedFieldName = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
   for (let i = startLine; i <= endLine && i < lines.length; i++) {
     const line = lines[i]
-    const fieldMatch = line.match(new RegExp(`^(${fieldName}):`))
+    const fieldMatch = line.match(new RegExp(`^(${escapedFieldName}):`))
     if (fieldMatch) {
       return i + 1 // 1始まり
     }
@@ -180,6 +183,35 @@ function findFieldLine(
 
   // フィールドが見つからない場合は開始位置
   return startLine + 1
+}
+
+/**
+ * 必須文字列フィールドを検証する共通関数
+ */
+function validateRequiredStringField(
+  data: Record<string, unknown>,
+  fieldName: string,
+  content: string,
+  startLine: number,
+  endLine: number
+): ValidationError | null {
+  const value = data[fieldName]
+
+  if (!value || typeof value !== 'string' || value.trim() === '') {
+    const line = value !== undefined
+      ? findFieldLine(content, fieldName, startLine, endLine)
+      : startLine + 2
+
+    return {
+      message: `${fieldName}フィールドは必須です`,
+      line,
+      column: 1,
+      severity: 'error',
+      source: 'yaml',
+    }
+  }
+
+  return null
 }
 
 /**
@@ -193,34 +225,13 @@ function validateAgentSchema(
 ): ValidationError[] {
   const errors: ValidationError[] = []
 
-  // 必須フィールド: name
-  if (!data.name || typeof data.name !== 'string' || data.name.trim() === '') {
-    const line = data.name !== undefined
-      ? findFieldLine(content, 'name', startLine, endLine)
-      : startLine + 2
-
-    errors.push({
-      message: 'nameフィールドは必須です',
-      line,
-      column: 1,
-      severity: 'error',
-      source: 'yaml',
-    })
-  }
-
-  // 必須フィールド: description
-  if (!data.description || typeof data.description !== 'string' || data.description.trim() === '') {
-    const line = data.description !== undefined
-      ? findFieldLine(content, 'description', startLine, endLine)
-      : startLine + 2
-
-    errors.push({
-      message: 'descriptionフィールドは必須です',
-      line,
-      column: 1,
-      severity: 'error',
-      source: 'yaml',
-    })
+  // 必須フィールド: name, description
+  const requiredFields = ['name', 'description'] as const
+  for (const fieldName of requiredFields) {
+    const error = validateRequiredStringField(data, fieldName, content, startLine, endLine)
+    if (error) {
+      errors.push(error)
+    }
   }
 
   // 任意フィールド: tools（配列形式チェック）
@@ -237,8 +248,8 @@ function validateAgentSchema(
       })
     } else {
       // 配列の中身が文字列かチェック
-      const invalidItems = data.tools.filter(item => typeof item !== 'string')
-      if (invalidItems.length > 0) {
+      const hasInvalidItems = data.tools.some(item => typeof item !== 'string')
+      if (hasInvalidItems) {
         errors.push({
           message: 'toolsフィールドの要素はすべて文字列である必要があります',
           line,
@@ -284,34 +295,13 @@ function validateSkillSchema(
 ): ValidationError[] {
   const errors: ValidationError[] = []
 
-  // 必須フィールド: name
-  if (!data.name || typeof data.name !== 'string' || data.name.trim() === '') {
-    const line = data.name !== undefined
-      ? findFieldLine(content, 'name', startLine, endLine)
-      : startLine + 2
-
-    errors.push({
-      message: 'nameフィールドは必須です',
-      line,
-      column: 1,
-      severity: 'error',
-      source: 'yaml',
-    })
-  }
-
-  // 必須フィールド: description
-  if (!data.description || typeof data.description !== 'string' || data.description.trim() === '') {
-    const line = data.description !== undefined
-      ? findFieldLine(content, 'description', startLine, endLine)
-      : startLine + 2
-
-    errors.push({
-      message: 'descriptionフィールドは必須です',
-      line,
-      column: 1,
-      severity: 'error',
-      source: 'yaml',
-    })
+  // 必須フィールド: name, description
+  const requiredFields = ['name', 'description'] as const
+  for (const fieldName of requiredFields) {
+    const error = validateRequiredStringField(data, fieldName, content, startLine, endLine)
+    if (error) {
+      errors.push(error)
+    }
   }
 
   return errors
@@ -411,15 +401,22 @@ export function validateSchema(
 
 /**
  * 重大度ごとのエラー数をカウント
+ * 1回のループで全カウントを計算（パフォーマンス最適化）
  */
 export function countBySeverity(
   errors: ValidationError[]
 ): Record<ValidationSeverity, number> {
-  return {
-    error: errors.filter(e => e.severity === 'error').length,
-    warning: errors.filter(e => e.severity === 'warning').length,
-    info: errors.filter(e => e.severity === 'info').length,
+  const counts: Record<ValidationSeverity, number> = {
+    error: 0,
+    warning: 0,
+    info: 0,
   }
+
+  for (const e of errors) {
+    counts[e.severity]++
+  }
+
+  return counts
 }
 
 /**

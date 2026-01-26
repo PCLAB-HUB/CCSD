@@ -3,19 +3,14 @@
  */
 
 import * as yaml from 'js-yaml'
-import {
+import { translateYamlError, translateJsonError } from './errorMessages'
+import type {
   ValidationError,
   ValidationSeverity,
-  translateYamlError,
-  translateJsonError,
-} from './errorMessages'
+  ValidationResult,
+} from '../types'
 
-export type { ValidationError, ValidationSeverity }
-
-export interface ValidationResult {
-  isValid: boolean
-  errors: ValidationError[]
-}
+export type { ValidationError, ValidationSeverity, ValidationResult }
 
 /**
  * YAMLの構文を検証
@@ -31,7 +26,7 @@ export function validateYaml(content: string): ValidationResult {
     yaml.load(content, {
       schema: yaml.DEFAULT_SCHEMA,
       onWarning: (warning) => {
-        const { line, column } = extractYamlPosition(warning.message, content)
+        const { line, column } = extractYamlPosition(warning.message)
         errors.push({
           message: translateYamlError(warning.message),
           line,
@@ -71,8 +66,7 @@ export function validateYaml(content: string): ValidationResult {
  * YAMLの警告メッセージから位置情報を抽出
  */
 function extractYamlPosition(
-  message: string,
-  _content: string
+  message: string
 ): { line: number; column: number } {
   // js-yamlの警告メッセージから位置を抽出する試み
   const lineMatch = message.match(/line (\d+)/i)
@@ -196,11 +190,12 @@ export function validateContent(
 
 /**
  * 構文検証とスキーマ検証を統合して実行
+ * @deprecated validateContentを直接使用してください。スキーマ検証はMainAreaで別途呼び出されます。
  */
 export function validateContentWithSchema(
   content: string,
   filename: string,
-  _filePath: string
+  _filePath?: string
 ): ValidationResult {
   // 動的インポートを避けるため、スキーマ検証はMainAreaで直接呼び出す
   // この関数は構文検証のみ行う

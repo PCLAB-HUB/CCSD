@@ -168,3 +168,25 @@ export {
   groupByCategory,
   DEFAULT_AI_REVIEW_SETTINGS,
 } from './aiReview'
+
+// 検索・置換関連
+export type {
+  SearchReplaceMode,
+  SearchReplaceOptions,
+  SearchMatch,
+  SearchMatchContext,
+  ReplaceResult,
+  SingleReplaceResult,
+  SearchReplaceState,
+  SearchReplaceActions,
+  UseSearchReplaceReturn,
+} from './searchReplace'
+export {
+  DEFAULT_SEARCH_OPTIONS,
+  DEFAULT_SEARCH_REPLACE_STATE,
+  getRegexFlags,
+  escapeRegex,
+  buildSearchRegex,
+  getHighlightRange,
+  isValidMatchIndex,
+} from './searchReplace'
