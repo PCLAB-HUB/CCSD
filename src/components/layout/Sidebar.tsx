@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, memo, useCallback } from 'react'
 import FileTree from '../tree/FileTree'
+import { FavoritesList } from '../favorites'
 import { Icon } from '../common'
 import type { FileNode } from '../../types'
+import type { FavoriteItem } from '../../types/favorites'
 
 interface SidebarProps {
   width: number
@@ -12,6 +14,12 @@ interface SidebarProps {
   loading: boolean
   error?: string | null
   onRetry?: () => void
+  favorites: FavoriteItem[]
+  onFavoriteSelect: (path: string, name: string) => void
+  onFavoriteRemove: (path: string) => void
+  onFavoritesReorder: (startIndex: number, endIndex: number) => void
+  isFavorite: (path: string) => boolean
+  onToggleFavorite: (path: string, name: string) => void
 }
 
 const Sidebar = memo<SidebarProps>(({
@@ -23,6 +31,12 @@ const Sidebar = memo<SidebarProps>(({
   loading,
   error,
   onRetry,
+  favorites,
+  onFavoriteSelect,
+  onFavoriteRemove,
+  onFavoritesReorder,
+  isFavorite,
+  onToggleFavorite,
 }) => {
   const [isResizing, setIsResizing] = useState(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -64,6 +78,16 @@ const Sidebar = memo<SidebarProps>(({
         style={{ width }}
       >
         <div className="p-2">
+          {/* お気に入りリスト */}
+          <FavoritesList
+            favorites={favorites}
+            selectedPath={selectedPath}
+            onItemClick={onFavoriteSelect}
+            onItemRemove={onFavoriteRemove}
+            onReorder={onFavoritesReorder}
+          />
+
+          {/* ファイルツリーラベル */}
           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-2">
             ~/.claude/
           </div>
@@ -95,6 +119,8 @@ const Sidebar = memo<SidebarProps>(({
               nodes={fileTree}
               onFileSelect={onFileSelect}
               selectedPath={selectedPath}
+              isFavorite={isFavorite}
+              onToggleFavorite={onToggleFavorite}
             />
           )}
         </div>
