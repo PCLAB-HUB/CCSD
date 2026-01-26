@@ -4,6 +4,7 @@
 
 pub mod backup;
 pub mod export;
+pub mod favorites;
 pub mod files;
 pub mod import;
 pub mod stats;
@@ -13,6 +14,7 @@ pub mod window;
 // 各モジュールからコマンドを再エクスポート
 pub use backup::*;
 pub use export::*;
+pub use favorites::*;
 pub use files::*;
 pub use import::*;
 pub use stats::*;

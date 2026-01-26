@@ -11,6 +11,7 @@
 //!   - `export` - エクスポート操作（単体、ZIP一括）
 //!   - `import` - インポート操作（単体、ZIP復元）
 //!   - `template` - カスタムテンプレート操作（CRUD）
+//!   - `favorites` - お気に入り操作（追加、削除、並べ替え）
 //! - `error` - カスタムエラー型
 //! - `types` - 共通データ型
 //! - `utils` - ユーティリティ関数
@@ -48,6 +49,11 @@ use commands::{
     get_custom_template,
     get_custom_templates,
     save_custom_template,
+    // favorites
+    add_favorite,
+    get_favorites,
+    remove_favorite,
+    reorder_favorites,
     // window
     close_preview_window,
     is_preview_window_open,
@@ -92,6 +98,11 @@ pub fn run() {
             get_custom_templates,
             get_custom_template,
             delete_custom_template,
+            // お気に入り操作
+            get_favorites,
+            add_favorite,
+            remove_favorite,
+            reorder_favorites,
             // ウィンドウ操作
             open_preview_window,
             close_preview_window,
