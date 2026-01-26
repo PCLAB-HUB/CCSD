@@ -5,6 +5,7 @@ import { countBySeverity, getSchemaTypeName, type SchemaFileType } from '../../u
 import { useMonacoEditor } from '../../hooks/useMonacoEditor'
 import { useSearchHighlight } from '../../hooks/useSearchHighlight'
 import { isMarkdownFile } from '../../utils/markdownParser'
+import { Icon } from '../common'
 import ProblemsPanel from './ProblemsPanel'
 import StatusBar from './StatusBar'
 
@@ -53,19 +54,7 @@ SchemaTypeBadge.displayName = 'SchemaTypeBadge'
 const EmptyState: FC = memo(() => (
   <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900">
     <div className="text-center text-gray-500 dark:text-gray-400">
-      <svg
-        className="size-16 mx-auto mb-4 opacity-50"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>
+      <Icon name="fileText" className="size-16 mx-auto mb-4 opacity-50" />
       <p className="text-lg">ファイルを選択してください</p>
       <p className="text-sm mt-1">左のサイドバーからファイルをクリックして編集</p>
     </div>
@@ -111,14 +100,7 @@ FileTab.displayName = 'FileTab'
 const ReadOnlyBanner: FC = memo(() => (
   <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
     <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300">
-      <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-        />
-      </svg>
+      <Icon name="lock" className="size-4" />
       読み取り専用モード - 編集するにはヘッダーの「読取専用」をクリックしてください
     </div>
   </div>

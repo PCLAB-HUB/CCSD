@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { Icon } from '../common'
 
 interface StatsMetaInfoProps {
   /** 最終更新日時 */
@@ -61,20 +62,7 @@ export const StatsMetaInfo = memo<StatsMetaInfoProps>(({
       {lastUpdated && (
         <div className="flex items-center gap-2">
           <dt className="flex items-center gap-1.5">
-            <svg
-              className="size-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <Icon name="clock" className="size-3.5" />
             <span>最終更新:</span>
           </dt>
           <dd>
@@ -89,20 +77,7 @@ export const StatsMetaInfo = memo<StatsMetaInfoProps>(({
       {configVersion && (
         <div className="flex items-center gap-2">
           <dt className="flex items-center gap-1.5">
-            <svg
-              className="size-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
-              />
-            </svg>
+            <Icon name="tag" className="size-3.5" />
             <span>バージョン:</span>
           </dt>
           <dd className="font-mono">{configVersion}</dd>
