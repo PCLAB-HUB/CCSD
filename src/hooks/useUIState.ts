@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+
+import { DEFAULT_SIDEBAR_WIDTH, MESSAGE_AUTO_CLEAR_DELAY } from '../constants'
+
 import type { Message } from '../types'
 
-export type { Message }
+export type { Message } from '../types'
 
 /**
  * UI状態を管理するカスタムフック
@@ -20,7 +23,7 @@ export function useUIState() {
   })
 
   const [message, setMessage] = useState<Message | null>(null)
-  const [sidebarWidth, setSidebarWidth] = useState(280)
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH)
   const [readOnly, setReadOnly] = useState(true)
 
   // ダークモードの適用（DOMクラスの切り替え）
@@ -32,10 +35,10 @@ export function useUIState() {
     }
   }, [darkMode])
 
-  // メッセージの自動クリア（3秒後）
+  // メッセージの自動クリア
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000)
+      const timer = setTimeout(() => setMessage(null), MESSAGE_AUTO_CLEAR_DELAY)
       return () => clearTimeout(timer)
     }
   }, [message])

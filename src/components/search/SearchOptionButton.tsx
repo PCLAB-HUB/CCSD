@@ -1,5 +1,6 @@
 import { FC, useState, useRef, useEffect, useCallback } from 'react'
 import Icon, { type IconName } from '../common/Icon'
+import { TOOLTIP_SHOW_DELAY } from '../../constants'
 
 interface SearchOptionButtonProps {
   icon: IconName
@@ -23,7 +24,7 @@ const SearchOptionButton: FC<SearchOptionButtonProps> = ({
   const handleMouseEnter = useCallback(() => {
     tooltipTimeoutRef.current = setTimeout(() => {
       setShowTooltip(true)
-    }, 500)
+    }, TOOLTIP_SHOW_DELAY)
   }, [])
 
   const handleMouseLeave = useCallback(() => {

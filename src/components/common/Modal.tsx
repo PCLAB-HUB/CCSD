@@ -1,6 +1,7 @@
 import { FC, ReactNode, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Icon from './Icon'
+import { MODAL_FOCUS_DELAY } from '../../constants'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
 
@@ -74,7 +75,7 @@ const Modal: FC<ModalProps> = ({
       // モーダルにフォーカス
       const timer = setTimeout(() => {
         modalRef.current?.focus()
-      }, 0)
+      }, MODAL_FOCUS_DELAY)
 
       // スクロール無効化
       document.body.style.overflow = 'hidden'

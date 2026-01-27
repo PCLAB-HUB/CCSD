@@ -13,6 +13,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { loadFavorites, saveFavorites } from "./tauri/favorites";
 import { isTauri } from "./useTauri";
+import { logError } from "../utils/errorMessages";
+import { FAVORITES_DATA_VERSION } from "../constants";
 import type {
   FavoriteItem,
   FavoritesData,
@@ -98,7 +100,8 @@ export function useFavorites({
       // orderでソートして設定
       const sortedItems = [...data.items].sort((a, b) => a.order - b.order);
       setFavorites(sortedItems);
-    } catch {
+    } catch (error) {
+      logError("お気に入り読み込み", error);
       onError?.("お気に入りの読み込みに失敗しました");
       setFavorites([]);
     } finally {
@@ -160,7 +163,7 @@ export function useFavorites({
       }
       try {
         const data: FavoritesData = {
-          version: 1,
+          version: FAVORITES_DATA_VERSION,
           items,
         };
         const success = await saveFavorites(data);
@@ -168,7 +171,8 @@ export function useFavorites({
           onError?.("お気に入りの保存に失敗しました");
         }
         return success;
-      } catch {
+      } catch (error) {
+        logError("お気に入り保存", error);
         onError?.("お気に入りの保存に失敗しました");
         return false;
       } finally {

@@ -9,6 +9,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { emitTo, listen, type EventTarget, type UnlistenFn } from '@tauri-apps/api/event'
+import { PREVIEW_WINDOW_FALLBACK_TIMEOUT, PREVIEW_WINDOW_CHECK_INTERVAL } from '../constants'
 
 const PREVIEW_WINDOW_LABEL = 'preview'
 
@@ -50,24 +51,20 @@ export function usePreviewWindow({
     const setupListener = async () => {
       try {
         unlisten = await listen('preview-ready', async () => {
-          console.log('[usePreviewWindow] Preview window is ready')
           isPreviewReadyRef.current = true
 
           // 保留中のコンテンツがあれば送信
           if (pendingContentRef.current) {
-            console.log('[usePreviewWindow] Sending pending content...')
             try {
               await emitTo(PREVIEW_TARGET, 'preview-content-update', pendingContentRef.current)
-              console.log('[usePreviewWindow] Content sent successfully')
-            } catch (error) {
-              console.error('[usePreviewWindow] Failed to send pending content:', error)
+            } catch {
+              // 送信エラーは無視
             }
             pendingContentRef.current = null
           }
         })
-        console.log('[usePreviewWindow] preview-ready listener setup complete')
-      } catch (error) {
-        console.error('[usePreviewWindow] Failed to setup preview-ready listener:', error)
+      } catch {
+        // リスナー設定エラーは無視
       }
     }
 
@@ -91,26 +88,24 @@ export function usePreviewWindow({
       // コンテンツを保留（プレビューウィンドウの準備完了を待つ）
       if (content) {
         pendingContentRef.current = { content, fileName, darkMode }
-        console.log('[usePreviewWindow] Content queued for sending')
       }
 
       await invoke('open_preview_window')
       setIsWindowOpen(true)
 
-      // フォールバック: 2秒後にまだ準備完了していなければ強制送信
+      // フォールバック: タイムアウト後にまだ準備完了していなければ強制送信
       setTimeout(async () => {
         if (pendingContentRef.current) {
-          console.log('[usePreviewWindow] Fallback: sending content after timeout')
           try {
             await emitTo(PREVIEW_TARGET, 'preview-content-update', pendingContentRef.current)
-          } catch (error) {
-            console.error('[usePreviewWindow] Fallback send failed:', error)
+          } catch {
+            // 送信エラーは無視
           }
           pendingContentRef.current = null
         }
-      }, 2000)
-    } catch (error) {
-      console.error('Failed to open preview window:', error)
+      }, PREVIEW_WINDOW_FALLBACK_TIMEOUT)
+    } catch {
+      // ウィンドウ開始エラーは無視
     } finally {
       setIsLoading(false)
     }
@@ -123,8 +118,8 @@ export function usePreviewWindow({
     try {
       await invoke('close_preview_window')
       setIsWindowOpen(false)
-    } catch (error) {
-      console.error('Failed to close preview window:', error)
+    } catch {
+      // ウィンドウ終了エラーは無視
     }
   }, [])
 
@@ -141,8 +136,8 @@ export function usePreviewWindow({
         fileName: newFileName,
         darkMode,
       })
-    } catch (error) {
-      console.error('Failed to send content to preview window:', error)
+    } catch {
+      // 送信エラーは無視
     }
   }, [isWindowOpen, darkMode])
 
@@ -155,8 +150,8 @@ export function usePreviewWindow({
     try {
       // Tauri v2: EventTargetを使用してプレビューウィンドウに直接送信
       await emitTo(PREVIEW_TARGET, 'preview-darkmode-update', newDarkMode)
-    } catch (error) {
-      console.error('Failed to sync dark mode to preview window:', error)
+    } catch {
+      // 同期エラーは無視
     }
   }, [isWindowOpen])
 
@@ -190,7 +185,7 @@ export function usePreviewWindow({
 
     // 定期チェック（ウィンドウが開いている場合のみ）
     if (isWindowOpen) {
-      checkIntervalRef.current = window.setInterval(checkWindowStatus, 2000)
+      checkIntervalRef.current = window.setInterval(checkWindowStatus, PREVIEW_WINDOW_CHECK_INTERVAL)
     }
 
     return () => {

@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
-import { searchFiles, isTauri } from './useTauri'
+import { useCallback, useEffect, useState } from 'react'
+
+import { SEARCH_DEBOUNCE_DELAY, SEARCH_MIN_QUERY_LENGTH } from '../constants'
+import { isTauri, searchFiles } from './useTauri'
+
 import type { FileContent, SearchHighlight } from '../types'
 
 /**
@@ -13,7 +16,7 @@ export function useSearch() {
   const [searchResults, setSearchResults] = useState<FileContent[]>([])
   const [searchHighlight, setSearchHighlight] = useState<SearchHighlight | null>(null)
 
-  // 検索処理（300msのデバウンス付き）
+  // 検索処理（デバウンス付き）
   useEffect(() => {
     async function performSearch() {
       if (!searchQuery.trim()) {
@@ -21,14 +24,14 @@ export function useSearch() {
         return
       }
 
-      // Tauri環境で2文字以上の場合のみ検索実行
-      if (isTauri() && searchQuery.length >= 2) {
+      // Tauri環境で最小文字数以上の場合のみ検索実行
+      if (isTauri() && searchQuery.length >= SEARCH_MIN_QUERY_LENGTH) {
         const results = await searchFiles(searchQuery)
         setSearchResults(results)
       }
     }
 
-    const debounceTimer = setTimeout(performSearch, 300)
+    const debounceTimer = setTimeout(performSearch, SEARCH_DEBOUNCE_DELAY)
     return () => clearTimeout(debounceTimer)
   }, [searchQuery])
 

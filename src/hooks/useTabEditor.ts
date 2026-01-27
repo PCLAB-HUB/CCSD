@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Tab, TabPersistData, UseTabEditorReturn } from '../types/tabs'
 import { STORAGE_KEY_TABS } from '../constants'
+import { logWarning } from '../utils/errorMessages'
 
 /**
  * localStorageからタブ状態を復元
@@ -28,9 +29,9 @@ function loadPersistedTabs(): { tabs: Tab[]; activeTabId: string | null } {
       tabs,
       activeTabId: data.activeTabId,
     }
-  } catch {
+  } catch (error) {
     // パースエラー時は空の状態を返す
-    console.warn('Failed to parse persisted tabs data')
+    logWarning('タブデータ復元', 'タブ状態のパースに失敗しました', { error })
     return { tabs: [], activeTabId: null }
   }
 }
@@ -58,8 +59,8 @@ function persistTabs(tabs: Tab[], activeTabId: string | null): void {
       savedAt: new Date().toISOString(),
     }
     localStorage.setItem(STORAGE_KEY_TABS, JSON.stringify(data))
-  } catch {
-    console.warn('Failed to persist tabs data')
+  } catch (error) {
+    logWarning('タブデータ保存', 'タブ状態の永続化に失敗しました', { error })
   }
 }
 

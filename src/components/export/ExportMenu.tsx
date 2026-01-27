@@ -2,6 +2,7 @@ import { FC, useState, useRef, useEffect } from 'react'
 import { save } from '@tauri-apps/plugin-dialog'
 import { exportFile, exportAllZip, getExportFileCount, isTauri } from '../../hooks/useTauri'
 import { Icon } from '../common'
+import { MESSAGE_AUTO_CLEAR_DELAY } from '../../constants'
 
 interface ExportMenuProps {
   /** 現在選択中のファイルパス */
@@ -32,7 +33,7 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
   // メッセージの自動消去
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000)
+      const timer = setTimeout(() => setMessage(null), MESSAGE_AUTO_CLEAR_DELAY)
       return () => clearTimeout(timer)
     }
   }, [message])

@@ -18,6 +18,19 @@ import type {
   ReviewScore,
 } from '../types/aiReview'
 import { REVIEW_SYSTEM_PROMPT, createReviewUserPrompt } from '../utils/aiReviewPrompt'
+import { logError, logWarning } from '../utils/errorMessages'
+import {
+  STORAGE_KEY_API_KEY,
+  ANTHROPIC_API_ENDPOINT,
+  ANTHROPIC_API_VERSION,
+  DEFAULT_CLAUDE_MODEL,
+  AI_REVIEW_MAX_TOKENS,
+  API_KEY_VALIDATION_MAX_TOKENS,
+  API_KEY_PREFIX,
+  DEFAULT_SCORE,
+  SCORE_MIN,
+  SCORE_MAX,
+} from '../constants'
 
 // ============================================================
 // APIレスポンス型定義
@@ -103,17 +116,6 @@ function isClaudeAPIErrorResponse(data: unknown): data is ClaudeAPIErrorResponse
   return true
 }
 
-/** APIキー保存用のローカルストレージキー */
-const API_KEY_STORAGE_KEY = 'claude-dashboard-api-key'
-
-/** デフォルトのAPIエンドポイント */
-const API_ENDPOINT = 'https://api.anthropic.com/v1/messages'
-
-/** 使用するモデル */
-const MODEL = 'claude-sonnet-4-20250514'
-
-/** 最大トークン数 */
-const MAX_TOKENS = 4096
 
 /**
  * APIキーを取得する
@@ -128,7 +130,7 @@ function getStoredAPIKey(): string | null {
 
   // ローカルストレージから取得
   try {
-    return localStorage.getItem(API_KEY_STORAGE_KEY)
+    return localStorage.getItem(STORAGE_KEY_API_KEY)
   } catch {
     return null
   }
@@ -139,9 +141,9 @@ function getStoredAPIKey(): string | null {
  */
 function saveAPIKey(apiKey: string): void {
   try {
-    localStorage.setItem(API_KEY_STORAGE_KEY, apiKey)
-  } catch {
-    console.warn('APIキーの保存に失敗しました')
+    localStorage.setItem(STORAGE_KEY_API_KEY, apiKey)
+  } catch (error) {
+    logWarning('APIキー保存', 'APIキーの保存に失敗しました', { error })
   }
 }
 
@@ -150,9 +152,9 @@ function saveAPIKey(apiKey: string): void {
  */
 function clearAPIKey(): void {
   try {
-    localStorage.removeItem(API_KEY_STORAGE_KEY)
-  } catch {
-    console.warn('APIキーの削除に失敗しました')
+    localStorage.removeItem(STORAGE_KEY_API_KEY)
+  } catch (error) {
+    logWarning('APIキー削除', 'APIキーの削除に失敗しました', { error })
   }
 }
 
@@ -180,11 +182,11 @@ function parseReviewResponse(
 
     // スコアの検証とデフォルト値設定
     const score: ReviewScore = {
-      overall: validateScore(parsed.score?.overall, 50),
-      completeness: validateScore(parsed.score?.completeness, 50),
-      security: validateScore(parsed.score?.security, 50),
-      readability: validateScore(parsed.score?.readability, 50),
-      bestPractice: validateScore(parsed.score?.bestPractice, 50),
+      overall: validateScore(parsed.score?.overall, DEFAULT_SCORE),
+      completeness: validateScore(parsed.score?.completeness, DEFAULT_SCORE),
+      security: validateScore(parsed.score?.security, DEFAULT_SCORE),
+      readability: validateScore(parsed.score?.readability, DEFAULT_SCORE),
+      bestPractice: validateScore(parsed.score?.bestPractice, DEFAULT_SCORE),
     }
 
     // 提案の検証と整形
@@ -218,17 +220,18 @@ function parseReviewResponse(
       suggestions,
       positives,
     }
-  } catch {
+  } catch (error) {
+    logError('レビュー結果パース', error, { responseText, fileName, filePath })
     throw new Error('レビュー結果のパースに失敗しました')
   }
 }
 
 /**
- * スコアを検証（0-100の範囲に収める）
+ * スコアを検証（SCORE_MIN-SCORE_MAXの範囲に収める）
  */
 function validateScore(value: unknown, defaultValue: number): number {
   if (typeof value !== 'number') return defaultValue
-  return Math.max(0, Math.min(100, Math.round(value)))
+  return Math.max(SCORE_MIN, Math.min(SCORE_MAX, Math.round(value)))
 }
 
 /**
@@ -266,17 +269,17 @@ async function callClaudeAPI(
   let response: Response
 
   try {
-    response = await fetch(API_ENDPOINT, {
+    response = await fetch(ANTHROPIC_API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': ANTHROPIC_API_VERSION,
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
+        model: DEFAULT_CLAUDE_MODEL,
+        max_tokens: AI_REVIEW_MAX_TOKENS,
         system: REVIEW_SYSTEM_PROMPT,
         messages: [
           {
@@ -547,10 +550,10 @@ export function useAIReview(): UseAIReviewReturn {
       return false
     }
 
-    if (!trimmedKey.startsWith('sk-ant-')) {
+    if (!trimmedKey.startsWith(API_KEY_PREFIX)) {
       setApiKeyModal(prev => ({
         ...prev,
-        error: 'APIキーの形式が正しくありません（sk-ant-で始まる必要があります）',
+        error: `APIキーの形式が正しくありません（${API_KEY_PREFIX}で始まる必要があります）`,
         isValidating: false,
       }))
       return false
@@ -560,17 +563,17 @@ export function useAIReview(): UseAIReviewReturn {
 
     try {
       // 簡易的なAPI検証（小さなリクエストを送信）
-      const response = await fetch(API_ENDPOINT, {
+      const response = await fetch(ANTHROPIC_API_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': trimmedKey,
-          'anthropic-version': '2023-06-01',
+          'anthropic-version': ANTHROPIC_API_VERSION,
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 10,
+          model: DEFAULT_CLAUDE_MODEL,
+          max_tokens: API_KEY_VALIDATION_MAX_TOKENS,
           messages: [{ role: 'user', content: 'test' }],
         }),
       })

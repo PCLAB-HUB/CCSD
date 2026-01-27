@@ -19,6 +19,7 @@ import {
   useUIState,
 } from './hooks'
 import { isMarkdownFile } from './utils/markdownParser'
+import { STORAGE_KEY_STATS_COLLAPSED } from './constants'
 
 import Header from './components/layout/Header'
 import MainArea from './components/layout/MainArea'
@@ -55,9 +56,6 @@ const TemplateSelector = lazy(() => import('./components/template/TemplateSelect
  * - useLinter: ベストプラクティスリンター機能
  * - useAIReview: AIレビュー機能
  */
-/** localStorage key for stats panel collapsed state */
-const STATS_COLLAPSED_KEY = 'claude-settings-stats-collapsed'
-
 function App() {
   // ========================================
   // カスタムフックの初期化
@@ -66,9 +64,10 @@ function App() {
   // 統計パネルの折りたたみ状態（localStorageから初期値を読み込み）
   const [isStatsCollapsed, setIsStatsCollapsed] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem(STATS_COLLAPSED_KEY)
+      const saved = localStorage.getItem(STORAGE_KEY_STATS_COLLAPSED)
       return saved ? JSON.parse(saved) : false
     } catch {
+      // localStorage読み取りエラーはデフォルト値で続行（ログ出力不要）
       return false
     }
   })
@@ -82,9 +81,9 @@ function App() {
   // 折りたたみ状態が変更されたらlocalStorageに保存
   useEffect(() => {
     try {
-      localStorage.setItem(STATS_COLLAPSED_KEY, JSON.stringify(isStatsCollapsed))
+      localStorage.setItem(STORAGE_KEY_STATS_COLLAPSED, JSON.stringify(isStatsCollapsed))
     } catch {
-      // localStorage書き込みエラーは無視
+      // localStorage書き込みエラーは無視（機能に影響しない）
     }
   }, [isStatsCollapsed])
 
