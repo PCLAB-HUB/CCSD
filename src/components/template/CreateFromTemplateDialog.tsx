@@ -1,8 +1,10 @@
-import { FC, useState, useEffect, useMemo } from 'react'
-import type { UnifiedTemplate } from '../../types'
+import { useEffect, useMemo, useState, type FC } from 'react'
+
 import { isCustomTemplate } from '../../types'
-import Modal from '../common/Modal'
 import Icon from '../common/Icon'
+import Modal from '../common/Modal'
+
+import type { UnifiedTemplate } from '../../types'
 
 interface CreateFromTemplateDialogProps {
   isOpen: boolean

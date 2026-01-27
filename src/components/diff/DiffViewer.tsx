@@ -1,5 +1,6 @@
-import { FC } from 'react'
+import type { FC } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
+
 import { Icon } from '../common'
 
 export type DiffViewMode = 'side-by-side' | 'inline'

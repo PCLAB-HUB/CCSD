@@ -1,6 +1,8 @@
-import { FC, useState, useRef, useEffect } from 'react'
-import type { FileContent } from '../../types'
+import { useEffect, useRef, useState, type FC } from 'react'
+
 import Icon from '../common/Icon'
+
+import type { FileContent } from '../../types'
 
 interface SearchBarProps {
   searchQuery: string

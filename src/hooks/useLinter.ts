@@ -3,19 +3,20 @@
  * Claude Code設定ファイルのリンティングを実行
  */
 
-import { useState, useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+
+import { lint } from '../utils/linter'
 import {
-  type LinterRule,
-  type LinterIssue,
-  type LinterResult,
-  type LinterContext,
-  type FrontmatterData,
-  type LinterRuleCategory,
+  AGENT_KNOWN_FIELDS,
   LINTER_RULES,
   SKILL_KNOWN_FIELDS,
-  AGENT_KNOWN_FIELDS,
+  type FrontmatterData,
+  type LinterContext,
+  type LinterIssue,
+  type LinterResult,
+  type LinterRule,
+  type LinterRuleCategory,
 } from '../utils/linterRules'
-import { lint } from '../utils/linter'
 
 // ============================================================================
 // 型定義

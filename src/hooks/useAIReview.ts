@@ -8,29 +8,31 @@
  * - 型安全なAPIレスポンス検証
  */
 
-import { useState, useCallback, useMemo } from 'react'
-import type {
-  AIReviewResult,
-  AIReviewStatus,
-  AIReviewError,
-  APIKeyModalState,
-  ReviewSuggestion,
-  ReviewScore,
-} from '../types/aiReview'
-import { REVIEW_SYSTEM_PROMPT, createReviewUserPrompt } from '../utils/aiReviewPrompt'
-import { logError, logWarning } from '../utils/errorMessages'
+import { useCallback, useMemo, useState } from 'react'
+
 import {
-  STORAGE_KEY_API_KEY,
+  AI_REVIEW_MAX_TOKENS,
   ANTHROPIC_API_ENDPOINT,
   ANTHROPIC_API_VERSION,
-  DEFAULT_CLAUDE_MODEL,
-  AI_REVIEW_MAX_TOKENS,
-  API_KEY_VALIDATION_MAX_TOKENS,
   API_KEY_PREFIX,
+  API_KEY_VALIDATION_MAX_TOKENS,
+  DEFAULT_CLAUDE_MODEL,
   DEFAULT_SCORE,
-  SCORE_MIN,
   SCORE_MAX,
+  SCORE_MIN,
+  STORAGE_KEY_API_KEY,
 } from '../constants'
+import { createReviewUserPrompt, REVIEW_SYSTEM_PROMPT } from '../utils/aiReviewPrompt'
+import { logError, logWarning } from '../utils/errorMessages'
+
+import type {
+  AIReviewError,
+  AIReviewResult,
+  AIReviewStatus,
+  APIKeyModalState,
+  ReviewScore,
+  ReviewSuggestion,
+} from '../types/aiReview'
 
 // ============================================================
 // APIレスポンス型定義

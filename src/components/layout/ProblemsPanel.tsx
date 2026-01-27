@@ -1,7 +1,9 @@
-import { FC, memo, useState, useCallback } from 'react'
-import type { ValidationError, ValidationSeverity } from '../../types'
+import { memo, useCallback, useState, type FC } from 'react'
+
 import { getSeverityColor, getSeverityIcon } from '../../utils/errorMessages'
 import { Icon } from '../common'
+
+import type { ValidationError, ValidationSeverity } from '../../types'
 
 /** 重大度に応じたスタイル設定 */
 const severityStyles: Record<ValidationSeverity, {

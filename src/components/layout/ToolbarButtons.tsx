@@ -1,7 +1,8 @@
-import { FC, memo } from 'react'
+import { memo, type FC } from 'react'
+
+import { AIReviewButton } from '../aiReview'
 import Icon from '../common/Icon'
 import ExportMenu from '../export/ExportMenu'
-import { AIReviewButton } from '../aiReview'
 
 interface ToolbarButtonsProps {
   // 新規作成・バックアップ

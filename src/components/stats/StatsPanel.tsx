@@ -1,7 +1,9 @@
 import { memo, useCallback, useId, useMemo } from 'react'
+
+import { Icon } from '../common'
 import { StatCard, type StatIconVariant } from './StatCard'
 import { StatsMetaInfo } from './StatsMetaInfo'
-import { Icon } from '../common'
+
 import type { Stats } from '../../types/stats'
 
 /**

@@ -6,8 +6,9 @@
  * Tauriバックエンドの `get_stats` コマンドを使用してデータを取得
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+
 import type { Stats } from '../types/stats'
 
 /**

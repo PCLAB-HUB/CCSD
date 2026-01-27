@@ -5,11 +5,12 @@
  * メインウィンドウからTauriイベント経由でコンテンツを受信し、
  * リアルタイムでプレビューを更新します。
  */
-import { FC, useState, useEffect, useCallback } from 'react'
-import { listen, emit, UnlistenFn } from '@tauri-apps/api/event'
+import { useCallback, useEffect, useState, type FC } from 'react'
+import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import MarkdownPreview from './MarkdownPreview'
+
 import { Icon } from '../common'
+import MarkdownPreview from './MarkdownPreview'
 
 interface PreviewContent {
   content: string

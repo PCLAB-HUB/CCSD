@@ -10,16 +10,18 @@
  * - Tauri経由でファイルに永続化（~/.claude/dashboard-favorites.json）
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { loadFavorites, saveFavorites } from "./tauri/favorites";
-import { isTauri } from "./useTauri";
-import { logError } from "../utils/errorMessages";
-import { FAVORITES_DATA_VERSION } from "../constants";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import { FAVORITES_DATA_VERSION } from '../constants'
+import { logError } from '../utils/errorMessages'
+import { loadFavorites, saveFavorites } from './tauri/favorites'
+import { isTauri } from './useTauri'
+
 import type {
+  FavoriteActions,
   FavoriteItem,
   FavoritesData,
-  FavoriteActions,
-} from "../types/favorites";
+} from '../types/favorites'
 
 interface UseFavoritesOptions {
   /** 成功メッセージを表示するコールバック */

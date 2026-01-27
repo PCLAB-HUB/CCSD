@@ -1,14 +1,16 @@
-import { FC, useState, useEffect, useCallback } from 'react'
-import type { CustomTemplate, SaveTemplateInput } from '../../types'
+import { useCallback, useEffect, useState, type FC } from 'react'
+
 import {
+  deleteCustomTemplate,
   getCustomTemplates,
   saveCustomTemplate,
-  deleteCustomTemplate,
 } from '../../hooks/tauri'
-import { Modal, LoadingSpinner, EmptyState, Icon } from '../common'
-import TemplateIcon from '../common/TemplateIcon'
 import { formatDate } from '../../utils/formatDate'
+import { EmptyState, Icon, LoadingSpinner, Modal } from '../common'
+import TemplateIcon from '../common/TemplateIcon'
 import TemplateEditor from './TemplateEditor'
+
+import type { CustomTemplate, SaveTemplateInput } from '../../types'
 
 interface TemplateManagerProps {
   isOpen: boolean

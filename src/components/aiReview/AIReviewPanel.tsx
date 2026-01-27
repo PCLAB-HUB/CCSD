@@ -1,11 +1,12 @@
-import { FC, memo, useMemo, ComponentPropsWithoutRef } from 'react'
+import { memo, useMemo, type ComponentPropsWithoutRef, type FC } from 'react'
 import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import remarkGfm from 'remark-gfm'
+
 import Icon from '../common/Icon'
 import LoadingSpinner from '../common/LoadingSpinner'
-import ReviewSuggestion, { Suggestion, SuggestionSeverity } from './ReviewSuggestion'
+import ReviewSuggestion, { type Suggestion, type SuggestionSeverity } from './ReviewSuggestion'
 
 /** レビュー結果の状態 */
 export type ReviewStatus = 'idle' | 'loading' | 'success' | 'error'
