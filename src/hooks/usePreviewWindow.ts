@@ -6,10 +6,11 @@
  * - コンテンツの同期
  * - ダークモードの同期
  */
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { emitTo, listen, type EventTarget, type UnlistenFn } from '@tauri-apps/api/event'
-import { PREVIEW_WINDOW_FALLBACK_TIMEOUT, PREVIEW_WINDOW_CHECK_INTERVAL } from '../constants'
+
+import { PREVIEW_WINDOW_CHECK_INTERVAL, PREVIEW_WINDOW_FALLBACK_TIMEOUT } from '../constants'
 
 const PREVIEW_WINDOW_LABEL = 'preview'
 
