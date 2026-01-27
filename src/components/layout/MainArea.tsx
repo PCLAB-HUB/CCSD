@@ -1,20 +1,23 @@
-import { FC, useMemo, memo, lazy, Suspense, useCallback, useEffect, useRef } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, type FC } from 'react'
 import Editor from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
-import type { SelectedFile, SearchHighlight, ValidationError, Tab } from '../../types'
-import { countBySeverity, getSchemaTypeName, type SchemaFileType } from '../../utils/schemaValidators'
+
 import { useMonacoEditor } from '../../hooks/useMonacoEditor'
 import { useSearchHighlight } from '../../hooks/useSearchHighlight'
 import { isMarkdownFile } from '../../utils/markdownParser'
+import { countBySeverity, getSchemaTypeName, type SchemaFileType } from '../../utils/schemaValidators'
+
 import { Icon } from '../common'
-import { TabBar } from '../tabs'
-import type { EditorTab } from '../tabs/TabItem'
 import { LinterPanel } from '../linter'
-import type { LintMessageData } from '../linter/LintMessage'
+import SearchReplacePanel from '../search/SearchReplacePanel'
+import { TabBar } from '../tabs'
 import ProblemsPanel from './ProblemsPanel'
 import StatusBar from './StatusBar'
-import SearchReplacePanel from '../search/SearchReplacePanel'
-import type { SearchMatch, SearchReplaceOptions } from '../../hooks/useSearchReplace'
+
+import type { SearchMatch, SearchReplaceOptions } from '../../types/searchReplace'
+import type { SelectedFile, SearchHighlight, Tab, ValidationError } from '../../types'
+import type { LintMessageData } from '../linter/LintMessage'
+import type { EditorTab } from '../tabs/TabItem'
 
 // MarkdownPreviewを遅延読み込み - Markdownファイルを開くまで不要
 const MarkdownPreview = lazy(() => import('../preview/MarkdownPreview'))

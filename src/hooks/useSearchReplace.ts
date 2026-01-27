@@ -1,58 +1,14 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-/**
- * 検索マッチの情報
- */
-export interface SearchMatch {
-  /** マッチの開始位置 */
-  start: number
-  /** マッチの終了位置 */
-  end: number
-  /** マッチした文字列 */
-  text: string
-  /** マッチが存在する行番号（0始まり） */
-  line: number
-  /** 行内での開始位置 */
-  column: number
-  /** プレビュー用のコンテキスト（前後のテキストを含む） */
-  context: string
-}
+import type {
+  ReplacePreview,
+  ReplaceResult,
+  SearchMatch,
+  SearchReplaceOptions,
+} from '../types/searchReplace'
 
-/**
- * 検索・置換のオプション
- */
-export interface SearchReplaceOptions {
-  /** 大文字・小文字を区別する */
-  caseSensitive: boolean
-  /** 単語全体でマッチ */
-  wholeWord: boolean
-  /** 正規表現を使用 */
-  useRegex: boolean
-}
-
-/**
- * 置換結果
- */
-export interface ReplaceResult {
-  /** 置換成功フラグ */
-  success: boolean
-  /** 置換された件数 */
-  count: number
-  /** 置換前のコンテンツ（Undo用） */
-  originalContent: string
-  /** 置換後のコンテンツ */
-  newContent: string
-}
-
-/**
- * 置換プレビュー情報
- */
-export interface ReplacePreview {
-  /** 置換後の文字列 */
-  replacement: string
-  /** 置換後のコンテキスト */
-  context: string
-}
+// 型をre-exportして既存のインポートを壊さない
+export type { ReplacePreview, ReplaceResult, SearchMatch, SearchReplaceOptions }
 
 /**
  * Undoヒストリーのエントリ
@@ -188,6 +144,7 @@ export function useSearchReplace(
         return new RegExp(pattern, flags)
       } catch {
         // 無効な正規表現の場合はnullを返す
+        // エラー詳細はvalidateRegexPatternで別途ユーザーに表示されるためログ出力は不要
         return null
       }
     },

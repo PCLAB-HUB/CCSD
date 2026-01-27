@@ -1,34 +1,12 @@
-import { FC, memo, useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type FC } from 'react'
+
 import Icon from '../common/Icon'
 import ReplacePreview from './ReplacePreview'
 
-/**
- * 検索マッチの情報
- */
-export interface SearchMatch {
-  /** マッチの開始位置 */
-  start: number
-  /** マッチの終了位置 */
-  end: number
-  /** マッチしたテキスト */
-  text: string
-  /** マッチが存在する行番号（1始まり） */
-  line: number
-  /** 行内での列位置 */
-  column: number
-}
+import type { SearchMatchDisplay, SearchReplaceOptions } from '../../types/searchReplace'
 
-/**
- * 検索・置換オプション
- */
-export interface SearchReplaceOptions {
-  /** 大文字小文字を区別するかどうか */
-  caseSensitive: boolean
-  /** 単語単位で検索するかどうか */
-  wholeWord: boolean
-  /** 正規表現を使用するかどうか */
-  useRegex: boolean
-}
+// re-export for backward compatibility
+export type { SearchMatchDisplay as SearchMatch, SearchReplaceOptions }
 
 interface SearchReplacePanelProps {
   /** パネルが開いているかどうか */
@@ -39,8 +17,8 @@ interface SearchReplacePanelProps {
   searchQuery: string
   /** 置換テキスト */
   replaceText: string
-  /** マッチした結果の配列 */
-  matches: SearchMatch[]
+  /** マッチした結果の配列（UI表示用、行番号は1始まり） */
+  matches: SearchMatchDisplay[]
   /** 現在のマッチインデックス */
   currentMatchIndex: number
   /** 検索オプション */

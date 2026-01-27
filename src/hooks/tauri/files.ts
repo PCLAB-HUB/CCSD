@@ -4,9 +4,11 @@
  */
 
 import { invoke } from '@tauri-apps/api/core'
-import type { FileNode, FileContent } from '../../types'
-import { isTauri } from './utils'
+
 import { translateTauriCommandError } from '../../utils/errorMessages'
+import { isTauri } from './utils'
+
+import type { FileContent, FileNode } from '../../types'
 
 // ============================================================
 // 型定義
@@ -48,15 +50,13 @@ function createErrorResult<T>(error: string): FileOperationResult<T> {
  */
 export async function getFileTree(): Promise<FileNode[]> {
   if (!isTauri()) {
-    console.warn('getFileTree: Tauri環境で実行されていません')
     return []
   }
 
   try {
     return await invoke<FileNode[]>('get_file_tree')
   } catch (error) {
-    const message = translateTauriCommandError('get_file_tree', error)
-    console.error(message)
+    translateTauriCommandError('get_file_tree', error)
     return []
   }
 }
@@ -75,7 +75,6 @@ export async function getFileTreeWithResult(): Promise<FileOperationResult<FileN
     return createSuccessResult(data)
   } catch (error) {
     const message = translateTauriCommandError('get_file_tree', error)
-    console.error(message)
     return createErrorResult(message)
   }
 }
@@ -91,15 +90,13 @@ export async function getFileTreeWithResult(): Promise<FileOperationResult<FileN
  */
 export async function readFile(path: string): Promise<FileContent | null> {
   if (!isTauri()) {
-    console.warn('readFile: Tauri環境で実行されていません')
     return null
   }
 
   try {
     return await invoke<FileContent>('read_file', { path })
   } catch (error) {
-    const message = translateTauriCommandError('read_file', error)
-    console.error(message)
+    translateTauriCommandError('read_file', error)
     return null
   }
 }
@@ -119,7 +116,6 @@ export async function readFileWithResult(path: string): Promise<FileOperationRes
     return createSuccessResult(data)
   } catch (error) {
     const message = translateTauriCommandError('read_file', error)
-    console.error(message)
     return createErrorResult(message)
   }
 }
@@ -132,7 +128,6 @@ export async function readFileWithResult(path: string): Promise<FileOperationRes
  */
 export async function writeFile(path: string, content: string): Promise<boolean> {
   if (!isTauri()) {
-    console.warn('writeFile: Tauri環境で実行されていません')
     return false
   }
 
@@ -140,10 +135,16 @@ export async function writeFile(path: string, content: string): Promise<boolean>
     await invoke('write_file', { path, content })
     return true
   } catch (error) {
-    const message = translateTauriCommandError('write_file', error)
-    console.error(message)
+    translateTauriCommandError('write_file', error)
     return false
   }
+}
+
+/**
+ * void型の操作結果を生成するヘルパー
+ */
+function createVoidSuccessResult(): FileOperationResult<void> {
+  return { success: true, data: undefined, error: null }
 }
 
 /**
@@ -159,10 +160,9 @@ export async function writeFileWithResult(path: string, content: string): Promis
 
   try {
     await invoke('write_file', { path, content })
-    return createSuccessResult(undefined as unknown as void)
+    return createVoidSuccessResult()
   } catch (error) {
     const message = translateTauriCommandError('write_file', error)
-    console.error(message)
     return createErrorResult(message)
   }
 }
@@ -175,7 +175,6 @@ export async function writeFileWithResult(path: string, content: string): Promis
  */
 export async function createFile(path: string, content: string): Promise<boolean> {
   if (!isTauri()) {
-    console.warn('createFile: Tauri環境で実行されていません')
     return false
   }
 
@@ -183,8 +182,7 @@ export async function createFile(path: string, content: string): Promise<boolean
     await invoke('create_file', { path, content })
     return true
   } catch (error) {
-    const message = translateTauriCommandError('create_file', error)
-    console.error(message)
+    translateTauriCommandError('create_file', error)
     return false
   }
 }
@@ -202,10 +200,9 @@ export async function createFileWithResult(path: string, content: string): Promi
 
   try {
     await invoke('create_file', { path, content })
-    return createSuccessResult(undefined as unknown as void)
+    return createVoidSuccessResult()
   } catch (error) {
     const message = translateTauriCommandError('create_file', error)
-    console.error(message)
     return createErrorResult(message)
   }
 }
@@ -221,15 +218,13 @@ export async function createFileWithResult(path: string, content: string): Promi
  */
 export async function searchFiles(query: string): Promise<FileContent[]> {
   if (!isTauri()) {
-    console.warn('searchFiles: Tauri環境で実行されていません')
     return []
   }
 
   try {
     return await invoke<FileContent[]>('search_files', { query })
   } catch (error) {
-    const message = translateTauriCommandError('search_files', error)
-    console.error(message)
+    translateTauriCommandError('search_files', error)
     return []
   }
 }
@@ -249,7 +244,6 @@ export async function searchFilesWithResult(query: string): Promise<FileOperatio
     return createSuccessResult(data)
   } catch (error) {
     const message = translateTauriCommandError('search_files', error)
-    console.error(message)
     return createErrorResult(message)
   }
 }
@@ -371,7 +365,6 @@ export async function searchAndReplaceInFile(
     return result
   } catch (error) {
     const message = translateSearchReplaceError(error)
-    console.error(message)
     return createErrorReplaceResult(message)
   }
 }
