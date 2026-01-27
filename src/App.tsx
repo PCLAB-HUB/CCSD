@@ -1,22 +1,22 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
-  useAIReview,
   useBackup,
   useDiff,
   useFavorites,
   useFileManager,
   useImport,
-  useKeyboardShortcuts,
   useLinter,
   useMarkdownPreview,
   usePreviewWindow,
   useSearch,
-  useSearchReplace,
   useStats,
   useTabEditor,
   useTemplate,
   useUIState,
+  useSearchReplace,
+  useAIReview,
+  useKeyboardShortcuts,
 } from './hooks'
 import { isMarkdownFile } from './utils/markdownParser'
 import { STORAGE_KEY_STATS_COLLAPSED } from './constants'
@@ -48,13 +48,14 @@ const TemplateSelector = lazy(() => import('./components/template/TemplateSelect
  * - useDiff: 差分表示
  * - useTemplate: テンプレート機能（カスタムテンプレート管理を含む）
  * - useBackup: バックアップ機能
- * - useKeyboardShortcuts: キーボードショートカット
  * - useMarkdownPreview: Markdownプレビュー
  * - useImport: インポート機能
  * - useFavorites: お気に入り機能
  * - useTabEditor: タブエディタ機能
  * - useLinter: ベストプラクティスリンター機能
+ * - useSearchReplace: 検索＆置換機能
  * - useAIReview: AIレビュー機能
+ * - useKeyboardShortcuts: キーボードショートカット
  */
 function App() {
   // ========================================
@@ -204,9 +205,6 @@ function App() {
     onReloadFileTree: loadFileTree,
   })
 
-  // キーボードショートカット（Cmd+S / Ctrl+S で保存）- 検索置換ショートカットは後で追加
-  useKeyboardShortcuts({ onSave: saveFile })
-
   // 統計データ
   const { stats } = useStats()
 
@@ -251,13 +249,6 @@ function App() {
     config: linterConfig,
     lastResult: linterResult,
     updateConfig: updateLinterConfig,
-    // 将来の拡張用に保持（現在は未使用）
-    // rules: linterRules,
-    // hasIssues: linterHasIssues,
-    // hasErrors: linterHasErrors,
-    // runLint,
-    // toggleCategory: toggleLinterCategory,
-    // clearResult: clearLinterResult,
   } = useLinter()
 
   // AIレビュー機能
@@ -266,16 +257,10 @@ function App() {
     result: aiReviewResult,
     error: aiReviewError,
     runReview: runAIReview,
-    // 将来の拡張用に保持（現在は未使用）
-    // apiKeyModal,
-    // hasAPIKey,
-    // resetReview: resetAIReview,
-    // openAPIKeyModal,
-    // closeAPIKeyModal,
-    // setAPIKey,
-    // clearAPIKey: clearAIAPIKey,
-    // updateAPIKeyInput,
   } = useAIReview()
+
+  // キーボードショートカット（Cmd+S / Ctrl+S で保存）
+  useKeyboardShortcuts({ onSave: saveFile })
 
   // ========================================
   // イベントハンドラ

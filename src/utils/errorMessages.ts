@@ -154,3 +154,65 @@ export function getSeverityIcon(severity: ValidationSeverity): string {
       return 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
   }
 }
+
+// ============================================================
+// エラーログユーティリティ
+// ============================================================
+
+/**
+ * エラーをコンソールに出力する共通関数
+ * 本番環境でのデバッグを容易にするため、コンテキスト情報を付加
+ *
+ * @param context - エラーが発生した場所や操作の説明（日本語）
+ * @param error - キャッチしたエラーオブジェクト
+ * @param additionalInfo - 追加の診断情報（オプション）
+ */
+export function logError(
+  context: string,
+  error: unknown,
+  additionalInfo?: Record<string, unknown>
+): void {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  const errorStack = error instanceof Error ? error.stack : undefined
+
+  console.error(`[${context}]`, {
+    message: errorMessage,
+    stack: errorStack,
+    ...additionalInfo,
+  })
+}
+
+/**
+ * 警告をコンソールに出力する共通関数
+ *
+ * @param context - 警告が発生した場所や操作の説明（日本語）
+ * @param message - 警告メッセージ
+ * @param additionalInfo - 追加の診断情報（オプション）
+ */
+export function logWarning(
+  context: string,
+  message: string,
+  additionalInfo?: Record<string, unknown>
+): void {
+  console.warn(`[${context}] ${message}`, additionalInfo ?? '')
+}
+
+/**
+ * エラーからユーザー向けメッセージを抽出する
+ *
+ * @param error - キャッチしたエラーオブジェクト
+ * @param defaultMessage - エラーが不明な場合のデフォルトメッセージ
+ * @returns ユーザー向けのエラーメッセージ
+ */
+export function getErrorMessage(
+  error: unknown,
+  defaultMessage = '予期しないエラーが発生しました'
+): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  if (typeof error === 'string') {
+    return error
+  }
+  return defaultMessage
+}

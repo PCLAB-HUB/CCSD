@@ -58,13 +58,13 @@ export function usePreviewWindow({
             try {
               await emitTo(PREVIEW_TARGET, 'preview-content-update', pendingContentRef.current)
             } catch {
-              // 送信エラーは無視
+              // プレビューウィンドウが閉じている可能性があるため、送信エラーは無視
             }
             pendingContentRef.current = null
           }
         })
       } catch {
-        // リスナー設定エラーは無視
+        // Tauri環境外での実行時はイベントリスナー設定が失敗するため無視
       }
     }
 
@@ -99,13 +99,13 @@ export function usePreviewWindow({
           try {
             await emitTo(PREVIEW_TARGET, 'preview-content-update', pendingContentRef.current)
           } catch {
-            // 送信エラーは無視
+            // プレビューウィンドウが準備できていない可能性があるため無視
           }
           pendingContentRef.current = null
         }
       }, PREVIEW_WINDOW_FALLBACK_TIMEOUT)
     } catch {
-      // ウィンドウ開始エラーは無視
+      // Tauri環境外での実行時はウィンドウ作成が失敗するため無視
     } finally {
       setIsLoading(false)
     }
@@ -119,7 +119,7 @@ export function usePreviewWindow({
       await invoke('close_preview_window')
       setIsWindowOpen(false)
     } catch {
-      // ウィンドウ終了エラーは無視
+      // ウィンドウが既に閉じている、またはTauri環境外での実行時は無視
     }
   }, [])
 
@@ -137,7 +137,7 @@ export function usePreviewWindow({
         darkMode,
       })
     } catch {
-      // 送信エラーは無視
+      // プレビューウィンドウが閉じている可能性があるため無視
     }
   }, [isWindowOpen, darkMode])
 
@@ -151,7 +151,7 @@ export function usePreviewWindow({
       // Tauri v2: EventTargetを使用してプレビューウィンドウに直接送信
       await emitTo(PREVIEW_TARGET, 'preview-darkmode-update', newDarkMode)
     } catch {
-      // 同期エラーは無視
+      // プレビューウィンドウが閉じている可能性があるため無視
     }
   }, [isWindowOpen])
 
@@ -176,7 +176,7 @@ export function usePreviewWindow({
         const isOpen = await invoke<boolean>('is_preview_window_open')
         setIsWindowOpen(isOpen)
       } catch {
-        // エラーは無視（ウィンドウがない場合など）
+        // Tauri環境外での実行時、またはウィンドウがない場合は無視
       }
     }
 

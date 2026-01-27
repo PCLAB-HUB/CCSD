@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getFileTree, readFile, writeFile, createFile, isTauri } from './useTauri'
+import { useCallback, useEffect, useState } from 'react'
+
+import { createFile, getFileTree, isTauri, readFile, writeFile } from './useTauri'
 import { validateContent } from '../utils/validators'
+import { logError } from '../utils/errorMessages'
+
 import type { FileNode, SelectedFile, ValidationError } from '../types'
 
 /**
@@ -83,7 +86,8 @@ export function useFileManager({ readOnly, onSuccess, onError }: UseFileManagerO
         setFileTree(DEMO_FILE_TREE)
         onSuccess('デモモードで起動中（Tauriアプリとして起動すると実ファイルを編集できます）')
       }
-    } catch {
+    } catch (error) {
+      logError('ファイルツリー読み込み', error)
       setFileTreeError('ファイルツリーの読み込みに失敗しました')
       setFileTree([])
     } finally {
