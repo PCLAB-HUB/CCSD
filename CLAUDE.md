@@ -52,16 +52,24 @@ src-tauri/              # バックエンド (Rust)
 ## 重要な設計パターン
 
 ### 状態管理
-App.tsxで複数のカスタムフックを統合:
+App.tsxで統合フックを使用（リファクタリング後）:
 - useFileManager: ファイル選択・保存
 - useTabEditor: タブ管理
-- useSearchReplace: 検索＆置換ロジック
-- useSearchHighlight: エディタハイライト
+- useAppSearchReplace: 検索＆置換統合（hooks/app/）
+- useAppAIReview: AIレビュー統合（hooks/app/）
+- useAppKeyboardShortcuts: キーボードショートカット統合（hooks/app/）
 
 ### Tauri API層
 `src/hooks/tauri/`でRustコマンドをラップ:
-- エラーハンドリング統一
+- エラーハンドリング統一（utils/errorMessages.ts）
 - 日本語エラーメッセージ
+
+### 定数管理
+`src/constants/`で一元管理:
+- timing.ts: タイムアウト、デバウンス
+- storage.ts: localStorageキー
+- api.ts: APIエンドポイント、モデル名
+- ui.ts: レイアウト、スコア範囲
 
 ### 検索ハイライトの流れ
 ```
@@ -81,23 +89,37 @@ npx tsc --noEmit     # TypeScriptチェック
 **最終更新: 2026-01-27**
 
 ### 今回のセッションで完了した作業
-1. **クラッシュ修正** - Rust側の`.unwrap()`を安全なエラーハンドリングに修正
-2. **検索＆置換機能の完成**
-   - ReplacePreview UI統合
-   - ファイル自動保存
-   - エラーメッセージ表示
-   - ヘッダーボタン追加
-   - アンドゥUI追加
-3. **検索ハイライト改善**
-   - Monaco Editor API修正（className → inlineClassName）
-   - 検索＆置換パネルとsearchHighlightの同期
-   - 視認性の高いカラー設定
+**大規模リファクタリング（10体サブエージェント並列実行）**
+
+1. **App.tsx分割**: 803行→601行（25%削減）
+   - useAppSearchReplace, useAppAIReview, useAppKeyboardShortcuts作成
+2. **useLinter.ts分割**: 605行→3ファイル（140+376+124行）
+   - frontmatterParser.ts, linter.ts分離
+3. **型定義統一**: SearchMatch型を1箇所に集約
+4. **定数一元化**: src/constants/に4ファイル作成
+5. **重複コード共通化**: Rustパス正規化をnormalize_claude_path()に統合
+6. **エラーハンドリング統一**: logError()ユーティリティ追加
+7. **useEffect修正**: eslint-disable削除、二重初期化解消
+8. **console.log削除**: デバッグコード約50行削除
+
+### 直近コミット（10件）
+- App.tsxを新しい統合フックで簡略化
+- インポート順序を整理
+- リンターによるコードフォーマット整形
+- console.log/デバッグコードを削除
+- エラーハンドリングを統一
+- SearchMatch/ReplaceResult型定義を統一
+- ハードコードされた定数を一元管理
+- 命名規則を改善
+- 重複コードを共通化
+- useEffect依存配列を修正
 
 ### 次のタスク候補
-- パフォーマンス最適化
+- パフォーマンス最適化（チャンクサイズ警告対応）
 - 複数ファイル一括置換
 - カスタムテンプレート追加機能
 
 ## 既知の問題・TODO
+- ビルド時のチャンクサイズ警告（syntax-highlighter 622KB）
 - プレビュー専用ウィンドウ（延期中）
 - カスタムテンプレート追加（延期中）
