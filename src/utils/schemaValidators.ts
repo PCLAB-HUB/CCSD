@@ -102,7 +102,7 @@ function extractFrontmatter(content: string): FrontmatterExtraction {
  * 外部依存なしで基本的なYAML構文をパース
  */
 function parseSimpleYaml(yaml: string): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
+  const parsedData: Record<string, unknown> = {}
   const lines = yaml.split('\n')
   let currentKey: string | null = null
   let arrayItems: string[] = []
@@ -121,15 +121,15 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
         inArray = true
         arrayItems = []
       }
-      const value = arrayMatch[1].trim()
+      const arrayValue = arrayMatch[1].trim()
       // 引用符を除去
-      arrayItems.push(value.replace(/^["']|["']$/g, ''))
+      arrayItems.push(arrayValue.replace(/^["']|["']$/g, ''))
       continue
     }
 
     // 配列が終了した場合
     if (inArray && currentKey && !line.match(/^\s+-/)) {
-      result[currentKey] = arrayItems
+      parsedData[currentKey] = arrayItems
       inArray = false
       arrayItems = []
     }
@@ -137,26 +137,26 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
     // キー: 値 の検出
     const kvMatch = line.match(/^(\w+):\s*(.*)$/)
     if (kvMatch) {
-      const key = kvMatch[1]
-      const value = kvMatch[2].trim()
+      const fieldKey = kvMatch[1]
+      const fieldValue = kvMatch[2].trim()
 
-      if (value === '') {
+      if (fieldValue === '') {
         // 次の行で配列やネストが始まる可能性
-        currentKey = key
+        currentKey = fieldKey
       } else {
         // 引用符を除去して値を設定
-        result[key] = value.replace(/^["']|["']$/g, '')
-        currentKey = key
+        parsedData[fieldKey] = fieldValue.replace(/^["']|["']$/g, '')
+        currentKey = fieldKey
       }
     }
   }
 
   // 最後の配列を保存
   if (inArray && currentKey) {
-    result[currentKey] = arrayItems
+    parsedData[currentKey] = arrayItems
   }
 
-  return result
+  return parsedData
 }
 
 /**
