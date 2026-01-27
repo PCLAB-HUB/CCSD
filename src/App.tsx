@@ -1,6 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
+  useAppAIReview,
+  useAppKeyboardShortcuts,
+  useAppSearchReplace,
   useBackup,
   useDiff,
   useFavorites,
@@ -14,9 +17,6 @@ import {
   useTabEditor,
   useTemplate,
   useUIState,
-  useSearchReplace,
-  useAIReview,
-  useKeyboardShortcuts,
 } from './hooks'
 import { isMarkdownFile } from './utils/markdownParser'
 import { STORAGE_KEY_STATS_COLLAPSED } from './constants'
@@ -46,16 +46,16 @@ const TemplateSelector = lazy(() => import('./components/template/TemplateSelect
  * - useFileManager: ファイルツリー、選択、編集、保存
  * - useSearch: 検索とハイライト
  * - useDiff: 差分表示
- * - useTemplate: テンプレート機能（カスタムテンプレート管理を含む）
+ * - useTemplate: テンプレート機能
  * - useBackup: バックアップ機能
  * - useMarkdownPreview: Markdownプレビュー
  * - useImport: インポート機能
  * - useFavorites: お気に入り機能
  * - useTabEditor: タブエディタ機能
  * - useLinter: ベストプラクティスリンター機能
- * - useSearchReplace: 検索＆置換機能
- * - useAIReview: AIレビュー機能
- * - useKeyboardShortcuts: キーボードショートカット
+ * - useAppSearchReplace: 検索＆置換統合フック
+ * - useAppAIReview: AIレビュー統合フック
+ * - useAppKeyboardShortcuts: 統合キーボードショートカット
  */
 function App() {
   // ========================================
@@ -68,27 +68,20 @@ function App() {
       const saved = localStorage.getItem(STORAGE_KEY_STATS_COLLAPSED)
       return saved ? JSON.parse(saved) : false
     } catch {
-      // localStorage読み取りエラーはデフォルト値で続行（ログ出力不要）
       return false
     }
   })
-
-  // AIレビューパネルの表示状態
-  const [isAIReviewPanelOpen, setIsAIReviewPanelOpen] = useState(false)
-
-  // 検索＆置換パネルの表示状態
-  const [isSearchReplacePanelOpen, setIsSearchReplacePanelOpen] = useState(false)
 
   // 折りたたみ状態が変更されたらlocalStorageに保存
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_STATS_COLLAPSED, JSON.stringify(isStatsCollapsed))
     } catch {
-      // localStorage書き込みエラーは無視（機能に影響しない）
+      // localStorage書き込みエラーは無視
     }
   }, [isStatsCollapsed])
 
-  // UI状態管理（ダークモード、メッセージ、サイドバー幅、読み取り専用）
+  // UI状態管理
   const {
     darkMode,
     message,
@@ -101,7 +94,7 @@ function App() {
     toggleReadOnly,
   } = useUIState()
 
-  // ファイル管理（ツリー、選択、編集、保存）
+  // ファイル管理
   const {
     fileTree,
     selectedFile,
@@ -147,7 +140,7 @@ function App() {
     onSuccess: showSuccess,
   })
 
-  // テンプレート機能（カスタムテンプレート管理を含む）
+  // テンプレート機能
   const {
     templateSelectorOpen,
     createDialogOpen,
@@ -230,13 +223,6 @@ function App() {
     openTab,
     updateTabContent,
     markTabAsSaved,
-    // 将来の拡張用に保持（現在は未使用）
-    // activeTab,
-    // hasUnsavedTabs,
-    // closeAllTabs,
-    // closeSavedTabs,
-    // closeOtherTabs,
-    // isTabUnsaved,
   } = useTabEditor({
     onUnsavedWarning: (unsavedTabs) => {
       const fileNames = unsavedTabs.map(t => t.name).join(', ')
@@ -251,25 +237,12 @@ function App() {
     updateConfig: updateLinterConfig,
   } = useLinter()
 
-  // AIレビュー機能
-  const {
-    status: aiReviewStatus,
-    result: aiReviewResult,
-    error: aiReviewError,
-    runReview: runAIReview,
-  } = useAIReview()
-
-  // キーボードショートカット（Cmd+S / Ctrl+S で保存）
-  useKeyboardShortcuts({ onSave: saveFile })
-
   // ========================================
   // イベントハンドラ
   // ========================================
 
   /**
    * ファイル選択ハンドラ
-   * 検索結果からの選択時はハイライトを設定
-   * タブエディタにも追加する
    */
   const handleFileSelect = useCallback(async (
     path: string,
@@ -287,13 +260,11 @@ function App() {
     resetSearch()
   }, [selectFile, setHighlight, clearHighlight, resetSearch])
 
-  // selectedFileが変更されたらタブを開く（パス/名前が変わったときのみ）
-  // contentの変更時には実行不要なため、前回値をrefで保持して比較
+  // selectedFileが変更されたらタブを開く
   const prevSelectedFileRef = useRef<{ path: string; name: string } | null>(null)
   useEffect(() => {
     if (selectedFile) {
       const prev = prevSelectedFileRef.current
-      // パスまたは名前が変わった場合のみタブを開く
       if (!prev || prev.path !== selectedFile.path || prev.name !== selectedFile.name) {
         openTab(selectedFile.path, selectedFile.name, selectedFile.content)
         prevSelectedFileRef.current = { path: selectedFile.path, name: selectedFile.name }
@@ -303,7 +274,7 @@ function App() {
     }
   }, [selectedFile, openTab])
 
-  // ファイル保存後（originalContentが更新されたとき）にタブを保存済み状態にマーク
+  // ファイル保存後にタブを保存済み状態にマーク
   useEffect(() => {
     if (selectedFile && selectedFile.content === selectedFile.originalContent) {
       markTabAsSaved(selectedFile.path)
@@ -312,7 +283,6 @@ function App() {
 
   /**
    * コンテンツ変更ハンドラ
-   * ファイルマネージャーとタブエディタの両方を更新
    */
   const handleContentChange = useCallback((newContent: string) => {
     updateContent(newContent)
@@ -321,8 +291,13 @@ function App() {
     }
   }, [updateContent, updateTabContent, selectedFile])
 
-  // 検索＆置換機能（handleContentChangeが必要なため、ここで定義）
+  // ========================================
+  // 検索＆置換統合フック
+  // ========================================
   const {
+    isSearchReplacePanelOpen,
+    openSearchReplacePanel,
+    closeSearchReplacePanel,
     searchQuery: replaceSearchQuery,
     replaceText,
     matches: replaceMatches,
@@ -334,137 +309,52 @@ function App() {
     setOptions: setReplaceOptions,
     findNext: replaceFindNext,
     findPrev: replaceFindPrev,
-    replaceCurrent,
-    replaceAll,
-    // resetSearchReplaceは将来の拡張用に保持
-    reset: _resetSearchReplace,
-  } = useSearchReplace(
-    selectedFile?.content ?? '',
-    handleContentChange
-  )
-
-  // _resetSearchReplaceは将来の拡張で使用予定
-  void _resetSearchReplace
-
-  /**
-   * 置換実行後にファイルを自動保存するハンドラ（単一置換）
-   */
-  const handleReplaceCurrent = useCallback(async () => {
-    const result = replaceCurrent()
-    if (result.success && result.count > 0) {
-      // 置換成功時にファイルを保存
-      const saved = await saveFile()
-      if (saved) {
-        showSuccess('置換して保存しました')
-      } else {
-        showError('置換は完了しましたが、保存に失敗しました')
-      }
-    }
-  }, [replaceCurrent, saveFile, showSuccess, showError])
-
-  /**
-   * 全置換実行後にファイルを自動保存するハンドラ
-   */
-  const handleReplaceAll = useCallback(async () => {
-    const result = replaceAll()
-    if (result.success && result.count > 0) {
-      // 置換成功時にファイルを保存
-      const saved = await saveFile()
-      if (saved) {
-        showSuccess(`${result.count}件を置換して保存しました`)
-      } else {
-        showError('置換は完了しましたが、保存に失敗しました')
-      }
-    }
-  }, [replaceAll, saveFile, showSuccess, showError])
-
-  /**
-   * 検索＆置換パネルを開く
-   */
-  const handleOpenSearchReplace = useCallback(() => {
-    setIsSearchReplacePanelOpen(true)
-  }, [])
-
-  /**
-   * 検索＆置換パネルを閉じる
-   */
-  const handleCloseSearchReplace = useCallback(() => {
-    setIsSearchReplacePanelOpen(false)
-  }, [])
-
-  // 検索＆置換のキーボードショートカット（Cmd+H / Ctrl+H）
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+H (Mac) or Ctrl+H (Windows) で検索＆置換を開く
-      if ((e.metaKey || e.ctrlKey) && e.key === 'h' && !e.shiftKey) {
-        e.preventDefault()
-        setIsSearchReplacePanelOpen(true)
-      }
-      // Cmd+Shift+H で全て置換
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'H') {
-        e.preventDefault()
-        if (isSearchReplacePanelOpen && replaceMatches.length > 0) {
-          void handleReplaceAll()
-        }
-      }
-      // Alt+C で大文字小文字区別をトグル
-      if (e.altKey && e.key === 'c' && !e.metaKey && !e.ctrlKey) {
-        if (isSearchReplacePanelOpen) {
-          e.preventDefault()
-          setReplaceOptions({ caseSensitive: !replaceOptions.caseSensitive })
-        }
-      }
-      // Alt+W で単語単位検索をトグル
-      if (e.altKey && e.key === 'w' && !e.metaKey && !e.ctrlKey) {
-        if (isSearchReplacePanelOpen) {
-          e.preventDefault()
-          setReplaceOptions({ wholeWord: !replaceOptions.wholeWord })
-        }
-      }
-      // Alt+R で正規表現をトグル
-      if (e.altKey && e.key === 'r' && !e.metaKey && !e.ctrlKey) {
-        if (isSearchReplacePanelOpen) {
-          e.preventDefault()
-          setReplaceOptions({ useRegex: !replaceOptions.useRegex })
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSearchReplacePanelOpen, replaceMatches.length, handleReplaceAll, replaceOptions, setReplaceOptions])
+    handleReplaceCurrent,
+    handleReplaceAll,
+  } = useAppSearchReplace({
+    content: selectedFile?.content ?? '',
+    onContentChange: handleContentChange,
+    onSave: saveFile,
+    onSuccess: showSuccess,
+    onError: showError,
+    setHighlight,
+    clearHighlight,
+    updateHighlightCount,
+  })
 
   // ========================================
-  // 検索＆置換パネルとエディタハイライトの同期
+  // AIレビュー統合フック
+  // ========================================
+  const {
+    isAIReviewPanelOpen,
+    closeAIReviewPanel,
+    status: aiReviewStatus,
+    result: aiReviewResult,
+    error: aiReviewError,
+    retryReview: handleRetryAIReview,
+  } = useAppAIReview({
+    selectedFile,
+  })
+
+  // ========================================
+  // 統合キーボードショートカット
+  // ========================================
+  useAppKeyboardShortcuts({
+    onSave: saveFile,
+    isSearchReplacePanelOpen,
+    onOpenSearchReplace: openSearchReplacePanel,
+    replaceMatchCount: replaceMatches.length,
+    onReplaceAll: handleReplaceAll,
+    replaceOptions,
+    onSetReplaceOptions: setReplaceOptions,
+  })
+
+  // ========================================
+  // その他のイベントハンドラ
   // ========================================
 
-  // 検索＆置換パネルの検索状態をsearchHighlightに同期
-  useEffect(() => {
-    if (isSearchReplacePanelOpen && replaceSearchQuery) {
-      // 検索＆置換パネルの検索をハイライトに反映
-      setHighlight(replaceSearchQuery)
-    } else if (!isSearchReplacePanelOpen) {
-      // パネルを閉じたらハイライトをクリア
-      clearHighlight()
-    }
-  }, [isSearchReplacePanelOpen, replaceSearchQuery, setHighlight, clearHighlight])
-
-  // 検索＆置換パネルのcurrentIndexをsearchHighlightに同期
-  useEffect(() => {
-    if (isSearchReplacePanelOpen && replaceMatches.length > 0) {
-      // replaceCurrentIndexの変更をsearchHighlightのナビゲーションに反映
-      // updateHighlightCountで総数を更新し、navigateHighlightで位置を同期
-      updateHighlightCount(replaceMatches.length)
-    }
-  }, [isSearchReplacePanelOpen, replaceMatches.length, replaceCurrentIndex, updateHighlightCount])
-
-  /**
-   * タブ選択時のハンドラ
-   * タブを選択したときに対応するファイルを読み込む
-   */
   const handleSelectTab = useCallback(async (tabId: string) => {
     setActiveTab(tabId)
-    // 現在選択中のファイルと異なるタブの場合、そのファイルを読み込む
     if (selectedFile?.path !== tabId) {
       const tab = tabs.find(t => t.id === tabId)
       if (tab) {
@@ -473,28 +363,14 @@ function App() {
     }
   }, [setActiveTab, selectedFile?.path, tabs, selectFile])
 
-  /**
-   * 検索結果クリック時のハンドラ
-   */
   const handleSearchResultClick = useCallback((path: string, name: string) => {
     handleFileSelect(path, name, searchQuery)
   }, [handleFileSelect, searchQuery])
 
-  /**
-   * バックアップ復元完了時のハンドラ
-   */
   const handleRestoreComplete = useCallback((success: boolean, restoreMessage: string) => {
-    onRestoreComplete(
-      success,
-      restoreMessage,
-      selectedFile?.path,
-      selectedFile?.name
-    )
+    onRestoreComplete(success, restoreMessage, selectedFile?.path, selectedFile?.name)
   }, [onRestoreComplete, selectedFile?.path, selectedFile?.name])
 
-  /**
-   * テンプレートからファイル作成
-   */
   const handleCreateFromTemplate = useCallback(async (
     fileName: string,
     content: string,
@@ -506,51 +382,16 @@ function App() {
     }
   }, [createFromTemplate, closeCreateDialog])
 
-  /**
-   * 変更プレビューハンドラ
-   */
   const handlePreviewChanges = useCallback(() => {
     previewChanges(selectedFile)
   }, [previewChanges, selectedFile])
-
-  /**
-   * AIレビュー実行ハンドラ
-   * 将来の拡張用（ヘッダーまたはツールバーにボタンを追加予定）
-   */
-  const _handleRunAIReview = useCallback(() => {
-    if (selectedFile) {
-      setIsAIReviewPanelOpen(true)
-      runAIReview(selectedFile.name, selectedFile.path, selectedFile.content)
-    }
-  }, [selectedFile, runAIReview])
-
-  // _handleRunAIReviewは将来の拡張で使用予定
-  void _handleRunAIReview
-
-  /**
-   * AIレビューパネルを閉じる
-   */
-  const handleCloseAIReviewPanel = useCallback(() => {
-    setIsAIReviewPanelOpen(false)
-  }, [])
-
-  /**
-   * AIレビュー再試行ハンドラ
-   */
-  const handleRetryAIReview = useCallback(() => {
-    if (selectedFile) {
-      runAIReview(selectedFile.name, selectedFile.path, selectedFile.content)
-    }
-  }, [selectedFile, runAIReview])
 
   // ========================================
   // 派生状態
   // ========================================
 
-  // 現在のファイルがMarkdownかどうか
   const currentFileIsMarkdown = selectedFile ? isMarkdownFile(selectedFile.name) : false
 
-  // モーダル用のローディングフォールバック
   const modalFallback = useMemo(() => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
@@ -559,33 +400,12 @@ function App() {
     </div>
   ), [])
 
-  // AIレビュー結果をAIReviewPanelの形式に変換
-  const aiReviewPanelResult = useMemo(() => {
-    if (!aiReviewResult) return null
-    return {
-      summary: aiReviewResult.summary,
-      suggestions: aiReviewResult.suggestions.map(s => ({
-        id: s.id,
-        severity: s.severity === 'critical' ? 'error' as const :
-                  s.severity === 'warning' ? 'warning' as const : 'info' as const,
-        title: s.title,
-        description: s.description,
-        line: s.lineNumber,
-        before: s.before,
-        after: s.after,
-      })),
-      overallScore: aiReviewResult.score.overall,
-      reviewedAt: new Date(aiReviewResult.timestamp),
-    }
-  }, [aiReviewResult])
-
   // ========================================
   // レンダリング
   // ========================================
 
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {/* ヘッダー: 検索、保存、設定など */}
       <Header
         darkMode={darkMode}
         onToggleDarkMode={toggleDarkMode}
@@ -615,10 +435,9 @@ function App() {
         onOpenPreviewWindow={openPreviewWindow}
         isPreviewWindowOpen={isPreviewWindowOpen}
         isPreviewWindowLoading={isPreviewWindowLoading}
-        onOpenSearchReplace={handleOpenSearchReplace}
+        onOpenSearchReplace={openSearchReplacePanel}
       />
 
-      {/* 統計パネル: ヘッダー直下に配置 */}
       {stats && (
         <StatsPanel
           stats={stats}
@@ -627,7 +446,6 @@ function App() {
         />
       )}
 
-      {/* メインコンテンツ: サイドバー + エディタ */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           width={sidebarWidth}
@@ -688,9 +506,8 @@ function App() {
               updateLinterConfig({ enabledCategories: [] })
             }
           }}
-          // 検索＆置換
           isSearchReplacePanelOpen={isSearchReplacePanelOpen}
-          onCloseSearchReplace={handleCloseSearchReplace}
+          onCloseSearchReplace={closeSearchReplacePanel}
           replaceSearchQuery={replaceSearchQuery}
           replaceText={replaceText}
           replaceMatches={replaceMatches}
@@ -707,9 +524,7 @@ function App() {
         />
       </div>
 
-      {/* 遅延読み込みモーダル - Suspenseでラップ */}
       <Suspense fallback={modalFallback}>
-        {/* Diff Modal */}
         {diffModalOpen && (
           <DiffModal
             isOpen={diffModalOpen}
@@ -719,7 +534,6 @@ function App() {
           />
         )}
 
-        {/* Backup List Modal */}
         {backupListOpen && (
           <BackupList
             isOpen={backupListOpen}
@@ -729,7 +543,6 @@ function App() {
           />
         )}
 
-        {/* Template Selector */}
         {templateSelectorOpen && (
           <TemplateSelector
             isOpen={templateSelectorOpen}
@@ -739,7 +552,6 @@ function App() {
           />
         )}
 
-        {/* Create From Template Dialog */}
         {createDialogOpen && (
           <CreateFromTemplateDialog
             isOpen={createDialogOpen}
@@ -750,7 +562,6 @@ function App() {
           />
         )}
 
-        {/* Template Manager */}
         {templateManagerOpen && (
           <TemplateManager
             isOpen={templateManagerOpen}
@@ -760,7 +571,6 @@ function App() {
           />
         )}
 
-        {/* Import Dialog */}
         {importDialogOpen && (
           <ImportDialog
             isOpen={importDialogOpen}
@@ -769,18 +579,15 @@ function App() {
           />
         )}
 
-        {/* AI Review Panel Modal */}
         {isAIReviewPanelOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="w-full max-w-2xl h-[80vh] bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden">
               <AIReviewPanel
-                status={aiReviewStatus === 'loading' ? 'loading' :
-                        aiReviewStatus === 'success' ? 'success' :
-                        aiReviewStatus === 'error' ? 'error' : 'idle'}
-                result={aiReviewPanelResult}
-                error={aiReviewError?.message || null}
+                status={aiReviewStatus}
+                result={aiReviewResult}
+                error={aiReviewError}
                 darkMode={darkMode}
-                onClose={handleCloseAIReviewPanel}
+                onClose={closeAIReviewPanel}
                 onRetry={handleRetryAIReview}
               />
             </div>
