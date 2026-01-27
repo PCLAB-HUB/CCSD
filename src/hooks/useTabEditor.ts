@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Tab, TabPersistData, UseTabEditorReturn } from '../types/tabs'
-
-/** localStorage のキー */
-const STORAGE_KEY = 'claude-dashboard-tabs'
+import { STORAGE_KEY_TABS } from '../constants'
 
 /**
  * localStorageからタブ状態を復元
@@ -13,7 +11,7 @@ function loadPersistedTabs(): { tabs: Tab[]; activeTabId: string | null } {
   }
 
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(STORAGE_KEY_TABS)
     if (!stored) {
       return { tabs: [], activeTabId: null }
     }
@@ -59,7 +57,7 @@ function persistTabs(tabs: Tab[], activeTabId: string | null): void {
       activeTabId,
       savedAt: new Date().toISOString(),
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    localStorage.setItem(STORAGE_KEY_TABS, JSON.stringify(data))
   } catch {
     console.warn('Failed to persist tabs data')
   }
@@ -85,11 +83,10 @@ export interface UseTabEditorOptions {
 export function useTabEditor(options: UseTabEditorOptions = {}): UseTabEditorReturn {
   const { onUnsavedWarning } = options
 
-  // 初期状態をlocalStorageから復元
-  const [tabs, setTabs] = useState<Tab[]>(() => loadPersistedTabs().tabs)
-  const [activeTabId, setActiveTabIdState] = useState<string | null>(
-    () => loadPersistedTabs().activeTabId
-  )
+  // 初期状態をlocalStorageから復元（一度だけ呼び出す）
+  const [{ tabs: initialTabs, activeTabId: initialActiveTabId }] = useState(loadPersistedTabs)
+  const [tabs, setTabs] = useState<Tab[]>(initialTabs)
+  const [activeTabId, setActiveTabIdState] = useState<string | null>(initialActiveTabId)
 
   // タブ状態が変更されたらlocalStorageに永続化
   useEffect(() => {

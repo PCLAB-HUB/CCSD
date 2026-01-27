@@ -1,39 +1,38 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
-import Sidebar from './components/layout/Sidebar'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import {
+  useAIReview,
+  useBackup,
+  useDiff,
+  useFavorites,
+  useFileManager,
+  useImport,
+  useKeyboardShortcuts,
+  useLinter,
+  useMarkdownPreview,
+  usePreviewWindow,
+  useSearch,
+  useSearchReplace,
+  useStats,
+  useTabEditor,
+  useTemplate,
+  useUIState,
+} from './hooks'
+import { isMarkdownFile } from './utils/markdownParser'
+
 import Header from './components/layout/Header'
 import MainArea from './components/layout/MainArea'
+import Sidebar from './components/layout/Sidebar'
 import { StatsPanel } from './components/stats'
 
 // 遅延読み込み - モーダルコンポーネントは初期表示に不要
-const DiffModal = lazy(() => import('./components/diff/DiffModal'))
-const BackupList = lazy(() => import('./components/backup/BackupList'))
-const TemplateSelector = lazy(() => import('./components/template/TemplateSelector'))
-const CreateFromTemplateDialog = lazy(() => import('./components/template/CreateFromTemplateDialog'))
-const TemplateManager = lazy(() => import('./components/template/TemplateManager'))
-const ImportDialog = lazy(() => import('./components/import/ImportDialog'))
 const AIReviewPanel = lazy(() => import('./components/aiReview/AIReviewPanel'))
-
-import { isMarkdownFile } from './utils/markdownParser'
-
-// カスタムフックのインポート
-import {
-  useUIState,
-  useFileManager,
-  useSearch,
-  useDiff,
-  useTemplate,
-  useBackup,
-  useKeyboardShortcuts,
-  useMarkdownPreview,
-  usePreviewWindow,
-  useImport,
-  useStats,
-  useFavorites,
-  useTabEditor,
-  useLinter,
-  useAIReview,
-  useSearchReplace,
-} from './hooks'
+const BackupList = lazy(() => import('./components/backup/BackupList'))
+const CreateFromTemplateDialog = lazy(() => import('./components/template/CreateFromTemplateDialog'))
+const DiffModal = lazy(() => import('./components/diff/DiffModal'))
+const ImportDialog = lazy(() => import('./components/import/ImportDialog'))
+const TemplateManager = lazy(() => import('./components/template/TemplateManager'))
+const TemplateSelector = lazy(() => import('./components/template/TemplateSelector'))
 
 /**
  * アプリケーションのルートコンポーネント
@@ -304,13 +303,21 @@ function App() {
     resetSearch()
   }, [selectFile, setHighlight, clearHighlight, resetSearch])
 
-  // selectedFileが変更されたらタブを開く（パスが変わったときのみ）
+  // selectedFileが変更されたらタブを開く（パス/名前が変わったときのみ）
+  // contentの変更時には実行不要なため、前回値をrefで保持して比較
+  const prevSelectedFileRef = useRef<{ path: string; name: string } | null>(null)
   useEffect(() => {
     if (selectedFile) {
-      openTab(selectedFile.path, selectedFile.name, selectedFile.content)
+      const prev = prevSelectedFileRef.current
+      // パスまたは名前が変わった場合のみタブを開く
+      if (!prev || prev.path !== selectedFile.path || prev.name !== selectedFile.name) {
+        openTab(selectedFile.path, selectedFile.name, selectedFile.content)
+        prevSelectedFileRef.current = { path: selectedFile.path, name: selectedFile.name }
+      }
+    } else {
+      prevSelectedFileRef.current = null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentの変更時には実行不要、パス/名前変更時のみ
-  }, [selectedFile?.path, selectedFile?.name, openTab])
+  }, [selectedFile, openTab])
 
   // ファイル保存後（originalContentが更新されたとき）にタブを保存済み状態にマーク
   useEffect(() => {
