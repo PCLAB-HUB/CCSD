@@ -5,8 +5,8 @@
 use crate::error::AppResult;
 use crate::types::{FileContent, FileNode, ReplaceResult};
 use crate::utils::{
-    get_claude_dir, is_allowed_extension, is_excluded_path, validate_path_security,
-    ALLOWED_EXTENSIONS, EXCLUDED_DIRS,
+    get_claude_dir, is_allowed_extension, is_excluded_path, normalize_claude_path,
+    normalize_claude_path_strict, validate_path_security, ALLOWED_EXTENSIONS, EXCLUDED_DIRS,
 };
 use log::info;
 use regex::{Regex, RegexBuilder};
@@ -165,16 +165,8 @@ pub fn write_file(path: String, content: String) -> AppResult<()> {
     let claude_dir = get_claude_dir().map_err(|e| e.to_string())?;
 
     // パスを正規化（~/.claude/ プレフィックスをサポート）
-    let path_buf = if path.starts_with("~/.claude/") {
-        match path.strip_prefix("~/.claude/") {
-            Some(suffix) => claude_dir.join(suffix),
-            None => return Err("パスの正規化に失敗しました: ~/.claude/ プレフィックスの処理エラー".to_string()),
-        }
-    } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
-        PathBuf::from(&path)
-    } else {
-        PathBuf::from(&path)
-    };
+    let path_buf = normalize_claude_path(&path, &claude_dir)
+        .ok_or_else(|| "パスの正規化に失敗しました".to_string())?;
 
     // セキュリティチェック
     validate_path_security(&path_buf, &claude_dir).map_err(|e| e.to_string())?;
@@ -201,17 +193,9 @@ pub fn write_file(path: String, content: String) -> AppResult<()> {
 pub fn create_file(path: String, content: String) -> AppResult<()> {
     let claude_dir = get_claude_dir().map_err(|e| e.to_string())?;
 
-    // パスを正規化
-    let path_buf = if path.starts_with("~/.claude/") {
-        match path.strip_prefix("~/.claude/") {
-            Some(suffix) => claude_dir.join(suffix),
-            None => return Err("パスの正規化に失敗しました: ~/.claude/ プレフィックスの処理エラー".to_string()),
-        }
-    } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
-        PathBuf::from(&path)
-    } else {
-        return Err("アクセス拒否: ~/.claude/ 配下のファイルのみ許可されています".to_string());
-    };
+    // パスを正規化（厳密モード: Claude配下のみ許可）
+    let path_buf = normalize_claude_path_strict(&path, &claude_dir)
+        .ok_or_else(|| "アクセス拒否: ~/.claude/ 配下のファイルのみ許可されています".to_string())?;
 
     // セキュリティチェック
     validate_path_security(&path_buf, &claude_dir).map_err(|e| e.to_string())?;
@@ -334,15 +318,9 @@ pub fn search_and_replace_in_file(
     let claude_dir = get_claude_dir().map_err(|e| e.to_string())?;
 
     // パスを正規化
-    let path_buf = if path.starts_with("~/.claude/") {
-        match path.strip_prefix("~/.claude/") {
-            Some(suffix) => claude_dir.join(suffix),
-            None => return Ok(ReplaceResult::error("パスの正規化に失敗しました: ~/.claude/ プレフィックスの処理エラー")),
-        }
-    } else if path.starts_with(&claude_dir.to_string_lossy().to_string()) {
-        PathBuf::from(&path)
-    } else {
-        PathBuf::from(&path)
+    let path_buf = match normalize_claude_path(&path, &claude_dir) {
+        Some(p) => p,
+        None => return Ok(ReplaceResult::error("パスの正規化に失敗しました")),
     };
 
     // セキュリティチェック

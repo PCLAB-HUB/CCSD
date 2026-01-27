@@ -30,8 +30,51 @@ export const DEFAULT_SEARCH_OPTIONS: SearchReplaceOptions = {
 // 検索結果
 // ============================================================================
 
-/** 検索マッチ情報 */
+/**
+ * 検索マッチ情報（統一版）
+ *
+ * コンテンツ内での位置（start/end）と行/列情報の両方を保持。
+ * - start/end: 文字列内のオフセット位置
+ * - line/column: エディタ表示用の行/列位置（0始まり）
+ */
 export interface SearchMatch {
+  /** マッチの開始位置（文字列オフセット） */
+  start: number
+  /** マッチの終了位置（文字列オフセット） */
+  end: number
+  /** マッチしたテキスト */
+  text: string
+  /** マッチが存在する行番号（0始まり） */
+  line: number
+  /** 行内での開始位置（0始まり） */
+  column: number
+  /** プレビュー用のコンテキスト（前後のテキストを含む） */
+  context: string
+}
+
+/**
+ * UI表示用の検索マッチ情報
+ * SearchReplacePanelなどのUIコンポーネントで使用。
+ * 行番号は1始まりに変換される。
+ */
+export interface SearchMatchDisplay {
+  /** マッチの開始位置 */
+  start: number
+  /** マッチの終了位置 */
+  end: number
+  /** マッチしたテキスト */
+  text: string
+  /** マッチが存在する行番号（1始まり、表示用） */
+  line: number
+  /** 行内での列位置 */
+  column: number
+}
+
+/**
+ * 詳細なマッチ情報（拡張版）
+ * 将来の複数ファイル検索などで使用予定
+ */
+export interface SearchMatchExtended extends SearchMatch {
   /** マッチのインデックス（0始まり） */
   index: number
   /** 開始行（1始まり） */
@@ -42,10 +85,10 @@ export interface SearchMatch {
   endLine: number
   /** 終了列（0始まり） */
   endCol: number
-  /** マッチしたテキスト */
+  /** マッチしたテキスト（別名） */
   matchText: string
   /** マッチ周辺のコンテキスト */
-  context: SearchMatchContext
+  contextInfo: SearchMatchContext
 }
 
 /** マッチ周辺のコンテキスト情報 */
@@ -62,16 +105,20 @@ export interface SearchMatchContext {
 // 置換結果
 // ============================================================================
 
-/** 置換結果 */
+/**
+ * 置換結果（統一版）
+ *
+ * useSearchReplaceフックと各コンポーネントで共通して使用。
+ */
 export interface ReplaceResult {
   /** 置換成功かどうか */
   success: boolean
   /** 置換された件数 */
-  replacedCount: number
-  /** 置換後のテキスト */
+  count: number
+  /** 置換前のコンテンツ（Undo用） */
+  originalContent: string
+  /** 置換後のコンテンツ */
   newContent: string
-  /** エラーメッセージ（失敗時） */
-  error?: string
 }
 
 /** 単一置換の結果 */
@@ -84,6 +131,16 @@ export interface SingleReplaceResult {
   nextIndex: number
   /** エラーメッセージ */
   error?: string
+}
+
+/**
+ * 置換プレビュー情報
+ */
+export interface ReplacePreview {
+  /** 置換後の文字列 */
+  replacement: string
+  /** 置換後のコンテキスト */
+  context: string
 }
 
 // ============================================================================
@@ -218,14 +275,28 @@ export function buildSearchRegex(
 
 /**
  * マッチ情報からハイライト範囲を計算
+ *
+ * SearchMatch型（line/columnベース）からMonaco Editor用の範囲を計算。
+ * 注: Monaco Editorは1始まりの行番号を使用するため、+1する。
  */
 export function getHighlightRange(match: SearchMatch): {
   start: { line: number; col: number }
   end: { line: number; col: number }
 } {
+  // SearchMatchのlineは0始まり、Monaco Editorは1始まり
+  const startLine = match.line + 1
+  const startCol = match.column
+  // 終了位置を計算（マッチテキストが複数行にまたがる場合を考慮）
+  const matchLines = match.text.split('\n')
+  const endLine = startLine + matchLines.length - 1
+  const endCol =
+    matchLines.length === 1
+      ? startCol + match.text.length
+      : matchLines[matchLines.length - 1].length
+
   return {
-    start: { line: match.startLine, col: match.startCol },
-    end: { line: match.endLine, col: match.endCol },
+    start: { line: startLine, col: startCol },
+    end: { line: endLine, col: endCol },
   }
 }
 

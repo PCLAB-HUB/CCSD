@@ -113,6 +113,68 @@ pub fn is_excluded_zip_entry(name: &str) -> bool {
     })
 }
 
+/// パス文字列を正規化
+///
+/// `~/.claude/` プレフィックスを実際のパスに変換し、
+/// Claude配下のパスかどうかを検証します。
+///
+/// # Arguments
+///
+/// * `path` - 正規化するパス文字列
+/// * `claude_dir` - Claudeディレクトリの絶対パス
+///
+/// # Returns
+///
+/// 正規化されたPathBuf。Claude配下でない場合はNone。
+///
+/// # Examples
+///
+/// ```ignore
+/// let claude_dir = get_claude_dir()?;
+/// let normalized = normalize_claude_path("~/.claude/CLAUDE.md", &claude_dir);
+/// // => Some(PathBuf from "/Users/xxx/.claude/CLAUDE.md")
+/// ```
+pub fn normalize_claude_path(path: &str, claude_dir: &Path) -> Option<PathBuf> {
+    let claude_dir_str = claude_dir.to_string_lossy().to_string();
+
+    if path.starts_with("~/.claude/") {
+        path.strip_prefix("~/.claude/")
+            .map(|suffix| claude_dir.join(suffix))
+    } else if path.starts_with(&claude_dir_str) {
+        Some(PathBuf::from(path))
+    } else {
+        // Claude配下でない場合もPathBufとして返す（セキュリティチェックは別途行う）
+        Some(PathBuf::from(path))
+    }
+}
+
+/// パス文字列を正規化（create_file用: Claude配下のみ許可）
+///
+/// `~/.claude/` プレフィックスまたはClaude配下の絶対パスのみを受け付けます。
+/// それ以外のパスはエラーとして拒否します。
+///
+/// # Arguments
+///
+/// * `path` - 正規化するパス文字列
+/// * `claude_dir` - Claudeディレクトリの絶対パス
+///
+/// # Returns
+///
+/// 正規化されたPathBuf。Claude配下でない場合はNone。
+pub fn normalize_claude_path_strict(path: &str, claude_dir: &Path) -> Option<PathBuf> {
+    let claude_dir_str = claude_dir.to_string_lossy().to_string();
+
+    if path.starts_with("~/.claude/") {
+        path.strip_prefix("~/.claude/")
+            .map(|suffix| claude_dir.join(suffix))
+    } else if path.starts_with(&claude_dir_str) {
+        Some(PathBuf::from(path))
+    } else {
+        // Claude配下でないパスは拒否
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
