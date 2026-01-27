@@ -1,4 +1,5 @@
-import { memo, useState, useCallback, useRef, useEffect } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+
 import { Icon } from '../common'
 import TabItem, { type EditorTab } from './TabItem'
 

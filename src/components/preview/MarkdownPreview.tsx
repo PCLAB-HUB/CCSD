@@ -1,8 +1,9 @@
-import { FC, useRef, useEffect, useMemo, useCallback, memo, ComponentPropsWithoutRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, type ComponentPropsWithoutRef, type FC } from 'react'
 import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import remarkGfm from 'remark-gfm'
+
 import { parseMarkdown } from '../../utils/markdownParser'
 import FrontmatterDisplay from './FrontmatterDisplay'
 

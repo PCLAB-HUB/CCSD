@@ -1,7 +1,9 @@
-import { memo, useState, useCallback } from 'react'
-import type { FileNode } from '../../types'
+import { memo, useCallback, useState } from 'react'
+
 import { Icon } from '../common'
 import { PinButton } from '../favorites'
+
+import type { FileNode } from '../../types'
 
 interface FileTreeProps {
   nodes: FileNode[]

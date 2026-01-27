@@ -1,7 +1,9 @@
-import { memo, useState, useCallback, type FC } from 'react'
-import type { FavoriteItem as FavoriteItemType } from '../../types/favorites'
-import FavoriteItem from './FavoriteItem'
+import { memo, useCallback, useState, type FC } from 'react'
+
 import { Icon } from '../common'
+import FavoriteItem from './FavoriteItem'
+
+import type { FavoriteItem as FavoriteItemType } from '../../types/favorites'
 
 interface FavoritesListProps {
   /** お気に入りアイテム一覧 */

@@ -3,8 +3,9 @@
  * @module hooks/tauri/template
  */
 
+import { invokeWithBoolean, invokeWithDefault } from './utils'
+
 import type { CustomTemplate, SaveTemplateInput } from '../../types'
-import { invokeWithDefault, invokeWithBoolean } from './utils'
 
 // ============================================================
 // カスタムテンプレート操作

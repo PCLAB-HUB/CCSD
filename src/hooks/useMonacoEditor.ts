@@ -1,12 +1,11 @@
-import { useRef, useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { OnMount } from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
-import { validateContent, toMonacoSeverity } from '../utils/validators'
+
+import { toMonacoSeverity, validateContent } from '../utils/validators'
+import { validateSchema, type SchemaValidationResult } from '../utils/schemaValidators'
+
 import type { SelectedFile, ValidationError } from '../types'
-import {
-  validateSchema,
-  type SchemaValidationResult,
-} from '../utils/schemaValidators'
 
 export interface UseMonacoEditorProps {
   selectedFile: SelectedFile | null

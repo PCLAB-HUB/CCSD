@@ -1,7 +1,8 @@
-import { FC, useState } from 'react'
-import DiffViewer, { DiffViewMode } from './DiffViewer'
-import Modal from '../common/Modal'
+import { useState, type FC } from 'react'
+
 import { Icon } from '../common'
+import Modal from '../common/Modal'
+import DiffViewer, { type DiffViewMode } from './DiffViewer'
 
 export interface DiffData {
   original: string

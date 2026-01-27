@@ -3,8 +3,9 @@
  * @module hooks/tauri/backup
  */
 
-import type { FileNode, FileContent } from '../../types'
-import { invokeWithDefault, invokeWithBoolean } from './utils'
+import { invokeWithBoolean, invokeWithDefault } from './utils'
+
+import type { FileContent, FileNode } from '../../types'
 
 // ============================================================
 // バックアップ取得

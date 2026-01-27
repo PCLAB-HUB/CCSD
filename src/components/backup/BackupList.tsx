@@ -1,8 +1,10 @@
-import { FC, useState, useEffect, useCallback } from 'react'
-import { getBackups, restoreBackup, isTauri } from '../../hooks/useTauri'
-import type { FileNode } from '../../types'
-import Modal from '../common/Modal'
+import { useCallback, useEffect, useState, type FC } from 'react'
+
+import { getBackups, isTauri, restoreBackup } from '../../hooks/useTauri'
 import Icon from '../common/Icon'
+import Modal from '../common/Modal'
+
+import type { FileNode } from '../../types'
 
 interface BackupListProps {
   isOpen: boolean
@@ -114,12 +116,11 @@ const BackupList: FC<BackupListProps> = ({ isOpen, onClose, onRestoreComplete, o
         setBackups(items)
 
         // 30日以上古いバックアップがある場合に警告
-        const oldBackups = items.filter(item => item.isOld)
-        if (oldBackups.length > 0) {
-          // TODO: Rustバックエンドに自動削除機能を追加する場合はここで呼び出す
-          // await invoke('cleanup_old_backups', { days: 30 })
-          console.log(`${oldBackups.length}件の古いバックアップがあります（30日以上前）`)
-        }
+        // TODO: Rustバックエンドに自動削除機能を追加する場合はここで呼び出す
+        // const oldBackups = items.filter(item => item.isOld)
+        // if (oldBackups.length > 0) {
+        //   await invoke('cleanup_old_backups', { days: 30 })
+        // }
       } else {
         // デモモード
         const demoBackups: BackupItem[] = [

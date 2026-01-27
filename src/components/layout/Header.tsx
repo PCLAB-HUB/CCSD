@@ -1,9 +1,11 @@
 import { memo } from 'react'
-import type { FileContent, SearchHighlight } from '../../types'
+
 import SearchBar from '../search/SearchBar'
 import SearchNavigation from '../search/SearchNavigation'
 import StatusBadges from './StatusBadges'
 import ToolbarButtons from './ToolbarButtons'
+
+import type { FileContent, SearchHighlight } from '../../types'
 
 interface HeaderProps {
   darkMode: boolean

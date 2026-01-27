@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, memo, useCallback } from 'react'
-import FileTree from '../tree/FileTree'
-import { FavoritesList } from '../favorites'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+
 import { Icon } from '../common'
+import { FavoritesList } from '../favorites'
+import FileTree from '../tree/FileTree'
+
 import type { FileNode } from '../../types'
 import type { FavoriteItem } from '../../types/favorites'
 

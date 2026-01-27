@@ -1,8 +1,10 @@
-import { FC, memo, useState, useCallback, useMemo } from 'react'
-import type { ValidationSeverity } from '../../types'
+import { memo, useCallback, useMemo, useState, type FC } from 'react'
+
 import { Icon } from '../common'
-import LintMessage, { LintMessageData, lintSeverityStyles } from './LintMessage'
+import LintMessage, { lintSeverityStyles, type LintMessageData } from './LintMessage'
 import LinterToggle from './LinterToggle'
+
+import type { ValidationSeverity } from '../../types'
 
 /** フィルターオプション */
 export type LintFilterOption = 'all' | ValidationSeverity

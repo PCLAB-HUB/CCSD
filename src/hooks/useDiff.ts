@@ -1,7 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
+
+import { getBackupContent, isTauri, readFile } from './useTauri'
+
 import type { DiffData } from '../components/diff/DiffModal'
 import type { SelectedFile } from '../types'
-import { readFile, getBackupContent, isTauri } from './useTauri'
 
 interface UseDiffOptions {
   /** エラーメッセージを表示するコールバック */

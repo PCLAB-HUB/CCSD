@@ -1,8 +1,10 @@
-import { FC, useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FC } from 'react'
+
 import { templates } from '../../data/templates'
-import type { Template, CustomTemplate, UnifiedTemplate } from '../../types'
 import { getCustomTemplates } from '../../hooks/tauri'
-import { Modal, Tabs, TemplateCard, TemplateIcon, Icon } from '../common'
+import { Icon, Modal, Tabs, TemplateCard, TemplateIcon } from '../common'
+
+import type { CustomTemplate, Template, UnifiedTemplate } from '../../types'
 import type { Tab } from '../common'
 
 interface TemplateSelectorProps {

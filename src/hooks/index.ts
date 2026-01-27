@@ -18,10 +18,10 @@ export { useSearch } from './useSearch'
 // 検索・置換機能
 export { useSearchReplace } from './useSearchReplace'
 export type {
+  ReplacePreview,
+  ReplaceResult,
   SearchMatch,
   SearchReplaceOptions,
-  ReplaceResult,
-  ReplacePreview,
 } from './useSearchReplace'
 
 // 差分表示
@@ -72,6 +72,19 @@ export type {
 // AIレビュー機能
 export { useAIReview } from './useAIReview'
 export type { UseAIReviewReturn } from './useAIReview'
+
+// App.tsx用の統合フック
+export {
+  useAppSearchReplace,
+  useAppAIReview,
+  useAppKeyboardShortcuts,
+} from './app'
+export type {
+  UseAppSearchReplaceReturn,
+  UseAppAIReviewReturn,
+  AIReviewPanelResult,
+  AIReviewPanelSuggestion,
+} from './app'
 
 // 型のre-export（types/から一元管理）
 export type {

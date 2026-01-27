@@ -1,5 +1,6 @@
-import { useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type * as monaco from 'monaco-editor'
+
 import type { SearchHighlight } from '../types'
 
 export interface UseSearchHighlightProps {

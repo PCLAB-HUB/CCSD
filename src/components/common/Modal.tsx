@@ -1,7 +1,8 @@
-import { FC, ReactNode, useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, type FC, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import Icon from './Icon'
+
 import { MODAL_FOCUS_DELAY } from '../../constants'
+import Icon from './Icon'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
 

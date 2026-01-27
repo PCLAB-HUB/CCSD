@@ -9,9 +9,11 @@
  * - 独自のJSON読み書きも可能（互換性のため両方サポート）
  */
 
-import { invoke } from "@tauri-apps/api/core";
-import type { FavoritesData, FavoriteItem } from "../../types/favorites";
-import { isTauri } from "./utils";
+import { invoke } from '@tauri-apps/api/core'
+
+import { isTauri } from './utils'
+
+import type { FavoriteItem, FavoritesData } from '../../types/favorites'
 
 /** お気に入りファイルのパス */
 const FAVORITES_PATH = "~/.claude/dashboard-favorites.json";

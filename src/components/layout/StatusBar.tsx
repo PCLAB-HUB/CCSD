@@ -1,7 +1,9 @@
-import { FC, memo } from 'react'
-import type { ErrorCounts } from './ProblemsPanel'
-import type { SchemaValidationResult } from '../../utils/schemaValidators'
+import { memo, type FC } from 'react'
+
 import { Icon } from '../common'
+
+import type { SchemaValidationResult } from '../../utils/schemaValidators'
+import type { ErrorCounts } from './ProblemsPanel'
 
 interface StatusBarProps {
   language: string

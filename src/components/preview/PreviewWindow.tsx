@@ -32,23 +32,6 @@ const PreviewWindow: FC = () => {
   const [darkMode, setDarkMode] = useState<boolean>(getSystemDarkMode)
   const [isConnected, setIsConnected] = useState<boolean>(false)
 
-  // デバッグ: コンポーネントのマウント確認
-  useEffect(() => {
-    console.log('[PreviewWindow] ========== PREVIEW WINDOW MOUNTED ==========')
-    console.log('[PreviewWindow] URL Debug:', {
-      href: window.location.href,
-      pathname: window.location.pathname,
-      origin: window.location.origin,
-      protocol: window.location.protocol,
-    })
-    console.log('[PreviewWindow] Document title:', document.title)
-    console.log('[PreviewWindow] Initial darkMode:', darkMode)
-    console.log('[PreviewWindow] System prefers dark:', getSystemDarkMode())
-    return () => {
-      console.log('[PreviewWindow] Component unmounted')
-    }
-  }, [])
-
   // コンテンツ更新イベントのリスナー
   useEffect(() => {
     let unlisten: UnlistenFn | undefined
@@ -56,28 +39,19 @@ const PreviewWindow: FC = () => {
 
     const setupListener = async () => {
       try {
-        console.log('[PreviewWindow] Setting up content listener...')
         unlisten = await listen<PreviewContent>('preview-content-update', (event) => {
-          console.log('[PreviewWindow] Received content update:', {
-            fileName: event.payload.fileName,
-            contentLength: event.payload.content?.length,
-            darkMode: event.payload.darkMode
-          })
           setContent(event.payload.content)
           setFileName(event.payload.fileName)
           setDarkMode(event.payload.darkMode)
           setIsConnected(true)
         })
-        console.log('[PreviewWindow] Content listener setup complete')
 
         // リスナー設定完了後、メインウィンドウに準備完了を通知
         if (isMounted) {
-          console.log('[PreviewWindow] Emitting preview-ready event...')
           await emit('preview-ready', { ready: true })
-          console.log('[PreviewWindow] preview-ready event emitted successfully')
         }
-      } catch (error) {
-        console.error('[PreviewWindow] Failed to setup preview listener:', error)
+      } catch {
+        // リスナー設定エラーは無視
       }
     }
 
@@ -86,7 +60,6 @@ const PreviewWindow: FC = () => {
     return () => {
       isMounted = false
       if (unlisten) {
-        console.log('[PreviewWindow] Cleaning up content listener')
         unlisten()
       }
     }
@@ -101,8 +74,8 @@ const PreviewWindow: FC = () => {
         unlisten = await listen<boolean>('preview-darkmode-update', (event) => {
           setDarkMode(event.payload)
         })
-      } catch (error) {
-        console.error('Failed to setup darkmode listener:', error)
+      } catch {
+        // リスナー設定エラーは無視
       }
     }
 
@@ -122,8 +95,8 @@ const PreviewWindow: FC = () => {
         const window = getCurrentWindow()
         const title = fileName ? `Preview - ${fileName}` : 'Markdown Preview'
         await window.setTitle(title)
-      } catch (error) {
-        console.error('Failed to update window title:', error)
+      } catch {
+        // タイトル更新エラーは無視
       }
     }
 

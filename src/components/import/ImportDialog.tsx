@@ -1,17 +1,19 @@
-import { FC, useState, useCallback } from 'react'
+import { useCallback, useState, type FC } from 'react'
 import { open } from '@tauri-apps/plugin-dialog'
+
 import {
   checkFileExists,
   checkFilesExist,
   importFile,
   importZip,
-  previewZip,
   isTauri,
+  previewZip,
 } from '../../hooks/useTauri'
-import type { ImportResult, FileExistsInfo, ZipFileInfo } from '../../types'
-import Modal from '../common/Modal'
 import { Icon } from '../common'
+import Modal from '../common/Modal'
 import OverwriteConfirmDialog from './OverwriteConfirmDialog'
+
+import type { FileExistsInfo, ImportResult, ZipFileInfo } from '../../types'
 
 interface ImportDialogProps {
   isOpen: boolean
