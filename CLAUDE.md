@@ -12,6 +12,7 @@ src/                    # フロントエンド (React)
 ├── components/
 │   ├── layout/         # Header, MainArea, Sidebar, StatusBar
 │   ├── editor/         # Monaco Editor関連
+│   ├── graph/          # 依存関係グラフ可視化
 │   ├── search/         # 検索＆置換パネル
 │   ├── tabs/           # タブエディタUI
 │   ├── tree/           # ファイルツリー
@@ -48,6 +49,7 @@ src-tauri/              # バックエンド (Rust)
 - インポート/エクスポート（ZIP対応）
 - リンター・AIレビュー
 - ダークモード
+- **依存関係グラフ可視化**（NEW）
 
 ## 重要な設計パターン
 
@@ -89,25 +91,35 @@ npx tsc --noEmit     # TypeScriptチェック
 **最終更新: 2026-01-30**
 
 ### 今回のセッションで完了した作業
-**パフォーマンス最適化（バンドルサイズ削減）**
+**依存関係グラフ可視化機能（10体サブエージェント並列実装）**
 
-1. **syntax-highlighter最適化**: 622KB → 61KB（**90%削減**）
-   - PrismLightを使用した軽量版CodeBlockコンポーネント作成
-   - 必要な言語のみ登録（js/ts/json/yaml/md/bash/rust/css/python/toml）
-2. **動的/静的インポート競合解決**:
-   - AIReviewPanel: index.tsからの静的エクスポート削除
-   - MarkdownPreview: PreviewWindowでも遅延読み込みに変更
-3. **main.js削減**: 434KB → 422KB（12KB削減）
-4. **コード分割有効化**:
-   - MarkdownPreview: 分離チャンク 4.64KB
-   - AIReviewPanel: 分離チャンク 8.16KB
+1. **型定義**: `src/types/graph.ts` - GraphNode, GraphEdge, NodeDetail等
+2. **参照パーサー**: `src/utils/referenceParser.ts` - スキル/サブエージェント参照の解析
+3. **状態管理フック**: `src/hooks/useDependencyGraph.ts` - グラフデータの構築・管理
+4. **UIコンポーネント**:
+   - `DependencyGraph.tsx`: メインコンテナ
+   - `GraphCanvas.tsx`: react-force-graph-2dによるグラフ描画
+   - `NodeDetailPanel.tsx`: 選択ノードの詳細表示
+   - `GraphLegend.tsx`: 凡例表示
+5. **App.tsx統合**: ヘッダーボタンでグラフ表示切り替え
+
+**機能詳細**:
+- CLAUDE.md/スキル/サブエージェント間の参照関係をフォースレイアウトで可視化
+- ノードタイプ別色分け（青:CLAUDE.md、緑:スキル、オレンジ:サブエージェント、紫:未分類）
+- シングルクリックで詳細表示、ダブルクリックでファイルを開く
+- 壊れた参照を赤破線で表示
 
 ### 直近コミット
-- perf: バンドルサイズ最適化（syntax-highlighter 622KB→61KB）
+- chore: react-force-graph-2d依存関係を追加
+- feat: 依存関係グラフ機能をApp.tsxとMainAreaに統合
+- feat: 依存グラフ状態管理フック(useDependencyGraph)を追加
+- feat: 参照パーサーユーティリティを追加
+- docs: 依存関係グラフビューア設計ドキュメント追加
 
 ### 次のタスク候補
 - 複数ファイル一括置換
 - カスタムテンプレート追加機能
+- グラフフィルタ機能（種類別表示/非表示）
 
 ## 既知の問題・TODO
 - プレビュー専用ウィンドウ（延期中）
