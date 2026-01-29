@@ -193,3 +193,30 @@ export {
   getHighlightRange,
   isValidMatchIndex,
 } from './searchReplace'
+
+// グラフ関連（依存関係可視化）
+export type {
+  NodeType,
+  EdgeType,
+  GraphNode,
+  GraphEdge,
+  GraphState,
+  ReferenceMatch,
+  NodeDetail,
+  EdgeStyle,
+} from './graph'
+export {
+  NODE_COLORS,
+  EDGE_STYLES,
+  getNodeColor,
+  getEdgeStyle,
+  createGraphNodeId,
+  createGraphEdgeId,
+  isNodeType,
+  isBrokenEdge,
+  getBrokenEdges,
+  getRelatedEdges,
+  getInDegree,
+  getOutDegree,
+  createDefaultGraphState,
+} from './graph'

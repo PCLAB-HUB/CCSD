@@ -81,6 +81,9 @@ function App() {
     }
   }, [isStatsCollapsed])
 
+  // 依存関係グラフの表示状態
+  const [showDependencyGraph, setShowDependencyGraph] = useState(false)
+
   // UI状態管理
   const {
     darkMode,
@@ -386,6 +389,22 @@ function App() {
     previewChanges(selectedFile)
   }, [previewChanges, selectedFile])
 
+  /**
+   * 依存関係グラフからファイルを開く
+   */
+  const handleOpenFileFromGraph = useCallback(async (path: string, name: string) => {
+    // グラフを閉じてファイルを選択
+    setShowDependencyGraph(false)
+    await handleFileSelect(path, name)
+  }, [handleFileSelect])
+
+  /**
+   * 依存関係グラフの表示切り替え
+   */
+  const toggleDependencyGraph = useCallback(() => {
+    setShowDependencyGraph(prev => !prev)
+  }, [])
+
   // ========================================
   // 派生状態
   // ========================================
@@ -436,6 +455,8 @@ function App() {
         isPreviewWindowOpen={isPreviewWindowOpen}
         isPreviewWindowLoading={isPreviewWindowLoading}
         onOpenSearchReplace={openSearchReplacePanel}
+        showDependencyGraph={showDependencyGraph}
+        onToggleDependencyGraph={toggleDependencyGraph}
       />
 
       {stats && (
@@ -521,6 +542,8 @@ function App() {
           onReplaceFindPrev={replaceFindPrev}
           onReplaceCurrent={handleReplaceCurrent}
           onReplaceAll={handleReplaceAll}
+          showDependencyGraph={showDependencyGraph}
+          onOpenFileFromGraph={handleOpenFileFromGraph}
         />
       </div>
 

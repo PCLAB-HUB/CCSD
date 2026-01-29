@@ -27,6 +27,9 @@ export type {
 // 差分表示
 export { useDiff } from './useDiff'
 
+// 依存関係グラフ
+export { useDependencyGraph } from './useDependencyGraph'
+
 // テンプレート機能
 export { useTemplate } from './useTemplate'
 

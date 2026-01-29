@@ -22,6 +22,9 @@ import type { EditorTab } from '../tabs/TabItem'
 // MarkdownPreviewを遅延読み込み - Markdownファイルを開くまで不要
 const MarkdownPreview = lazy(() => import('../preview/MarkdownPreview'))
 
+// DependencyGraphを遅延読み込み - グラフ表示時のみ必要
+const DependencyGraph = lazy(() => import('../graph/DependencyGraph'))
+
 /** リンター結果の型 */
 interface LinterResult {
   messages: LintMessageData[]
@@ -69,6 +72,9 @@ interface MainAreaProps {
   onReplaceFindPrev?: () => void
   onReplaceCurrent?: () => void
   onReplaceAll?: () => void
+  // 依存関係グラフ関連のプロパティ
+  showDependencyGraph?: boolean
+  onOpenFileFromGraph?: (path: string, name: string) => void
 }
 
 /** ファイル名から言語を判定 */
@@ -199,6 +205,9 @@ const MainArea: FC<MainAreaProps> = memo(({
   onReplaceFindPrev,
   onReplaceCurrent,
   onReplaceAll,
+  // 依存関係グラフ関連
+  showDependencyGraph = false,
+  onOpenFileFromGraph,
 }) => {
   // Markdownファイルかどうかを判定
   const isMarkdown = selectedFile ? isMarkdownFile(selectedFile.name) : false
@@ -354,6 +363,20 @@ const MainArea: FC<MainAreaProps> = memo(({
 
   // 重大度ごとのカウント
   const errorCounts = useMemo(() => countBySeverity(allErrors), [allErrors])
+
+  // 依存関係グラフを表示する場合
+  if (showDependencyGraph && onOpenFileFromGraph) {
+    return (
+      <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+        <Suspense fallback={<LoadingSpinner />}>
+          <DependencyGraph
+            darkMode={darkMode}
+            onOpenFile={onOpenFileFromGraph}
+          />
+        </Suspense>
+      </div>
+    )
+  }
 
   // ファイルが選択されていない場合
   if (!selectedFile) {

@@ -39,6 +39,9 @@ interface HeaderProps {
   isPreviewWindowLoading?: boolean
   // 検索＆置換
   onOpenSearchReplace?: () => void
+  // 依存関係グラフ
+  showDependencyGraph?: boolean
+  onToggleDependencyGraph?: () => void
 }
 
 const Header = memo<HeaderProps>(({
@@ -71,6 +74,8 @@ const Header = memo<HeaderProps>(({
   isPreviewWindowOpen = false,
   isPreviewWindowLoading = false,
   onOpenSearchReplace,
+  showDependencyGraph = false,
+  onToggleDependencyGraph,
 }) => {
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -150,6 +155,8 @@ const Header = memo<HeaderProps>(({
           onToggleReadOnly={onToggleReadOnly}
           darkMode={darkMode}
           onToggleDarkMode={onToggleDarkMode}
+          showDependencyGraph={showDependencyGraph}
+          onToggleDependencyGraph={onToggleDependencyGraph}
         />
       </div>
     </header>
