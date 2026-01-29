@@ -13,6 +13,8 @@ interface DependencyGraphProps {
   onOpenFile: (path: string, name: string) => void
   /** ダークモードフラグ */
   darkMode: boolean
+  /** 初期選択するファイルパス */
+  initialSelectedPath?: string
 }
 
 /**
@@ -25,7 +27,7 @@ interface DependencyGraphProps {
  * - ヘッダー: タイトルとリフレッシュボタン
  * - メイン: 左側にツリー、右側に詳細パネル
  */
-const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) => {
+const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode, initialSelectedPath }) => {
   const {
     nodes,
     edges,
@@ -44,6 +46,16 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) =>
   useEffect(() => {
     void loadGraph()
   }, [loadGraph])
+
+  // グラフ読み込み完了後、initialSelectedPathに一致するノードを選択
+  useEffect(() => {
+    if (!isLoading && nodes.length > 0 && initialSelectedPath) {
+      const node = nodes.find(n => n.path === initialSelectedPath)
+      if (node) {
+        selectNode(node)
+      }
+    }
+  }, [isLoading, nodes, initialSelectedPath, selectNode])
 
   // 選択中のノードの詳細情報を取得
   const nodeDetail = useMemo(() => {

@@ -372,6 +372,7 @@ const MainArea: FC<MainAreaProps> = memo(({
           <DependencyGraph
             darkMode={darkMode}
             onOpenFile={onOpenFileFromGraph}
+            initialSelectedPath={selectedFile?.path}
           />
         </Suspense>
       </div>
