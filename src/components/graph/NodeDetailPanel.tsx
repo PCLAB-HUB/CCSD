@@ -2,12 +2,13 @@ import { memo } from 'react'
 
 import { Icon } from '../common'
 
-import type { NodeDetail, GraphNode, NodeType } from '../../types/graph'
+import type { NodeDetail, GraphNode, TreeNode, NodeType } from '../../types/graph'
 import { NODE_TYPE_LABELS, NODE_TYPE_BADGE_STYLES, BADGE_BASE_STYLE } from '../../constants/graph'
 
 interface NodeDetailPanelProps {
   nodeDetail: NodeDetail | null
-  onNodeClick: (node: GraphNode) => void
+  /** ノードクリック時のハンドラ（GraphNodeまたはTreeNodeを受け取る） */
+  onNodeClick: (node: GraphNode | TreeNode) => void
   onOpenFile: (path: string, name: string) => void
   darkMode: boolean
 }

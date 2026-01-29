@@ -58,7 +58,7 @@ export interface UseDependencyGraphReturn {
   /** グラフを読み込む */
   loadGraph: () => Promise<void>
   /** ノードを選択する */
-  selectNode: (node: GraphNode | null) => void
+  selectNode: (node: GraphNode | TreeNode | null) => void
   /** ノードの詳細を取得する */
   getNodeDetail: (node: GraphNode) => NodeDetail
   /** グラフを再読み込みする */
@@ -204,18 +204,20 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
 
   /**
    * ノードを選択する
-   * TreeNodeが渡された場合でも、nodesから対応するGraphNodeを探して保存する
+   *
+   * TreeNodeはGraphNodeを継承（extends）しているため、
+   * 型システム上はどちらが渡されてもGraphNode型の変数に代入可能。
+   *
+   * 注意: TreeNodeの追加プロパティ（children, isExpanded等）も
+   * selectedNodeに含まれるが、使用時はGraphNodeとして扱うため問題ない。
+   *
    * @param node - 選択するノード（nullで選択解除）
    */
-  const selectNode = useCallback((node: GraphNode | null) => {
-    if (node === null) {
-      setSelectedNode(null)
-    } else {
-      // nodesから対応するGraphNodeを探す（TreeNodeが渡された場合の対応）
-      const graphNode = nodes.find(n => n.id === node.id) ?? null
-      setSelectedNode(graphNode)
-    }
-  }, [nodes])
+  const selectNode = useCallback((node: GraphNode | TreeNode | null) => {
+    // TreeNodeが渡されてもGraphNodeとして扱える（TypeScriptの構造的部分型）
+    // nullまたはノードをそのまま設定（新しいオブジェクトを作成しない）
+    setSelectedNode(node)
+  }, [])
 
   /**
    * ノードの詳細情報を取得する

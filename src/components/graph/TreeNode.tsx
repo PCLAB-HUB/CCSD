@@ -147,4 +147,50 @@ const TreeNodeComponent: FC<TreeNodeProps> = ({
 
 TreeNodeComponent.displayName = 'TreeNode'
 
-export default memo(TreeNodeComponent)
+/**
+ * TreeNodeのmemo比較関数
+ *
+ * 重要: onSelectやonToggleなどのコールバック関数は
+ * 親コンポーネントで再作成される可能性があるため、
+ * 関数の参照比較ではなく、必要なプロパティのみを比較する
+ */
+function arePropsEqual(
+  prevProps: TreeNodeProps,
+  nextProps: TreeNodeProps
+): boolean {
+  // ノードのIDが変わった場合は再レンダリング
+  if (prevProps.node.id !== nextProps.node.id) return false
+
+  // 選択状態が変わった場合は再レンダリング
+  const wasSelected = prevProps.node.id === prevProps.selectedId
+  const isSelected = nextProps.node.id === nextProps.selectedId
+  if (wasSelected !== isSelected) return false
+
+  // 展開状態が変わった場合は再レンダリング
+  if (prevProps.node.isExpanded !== nextProps.node.isExpanded) return false
+
+  // ダークモードが変わった場合は再レンダリング
+  if (prevProps.darkMode !== nextProps.darkMode) return false
+
+  // 子ノードの数が変わった場合は再レンダリング
+  if (prevProps.node.children.length !== nextProps.node.children.length) return false
+
+  // ラベルが変わった場合は再レンダリング
+  if (prevProps.node.label !== nextProps.node.label) return false
+
+  // エラー状態が変わった場合は再レンダリング
+  if (prevProps.node.hasError !== nextProps.node.hasError) return false
+
+  // 循環参照状態が変わった場合は再レンダリング
+  if (prevProps.node.isCyclic !== nextProps.node.isCyclic) return false
+
+  // コールバック関数が変わった場合は再レンダリング
+  // （これにより最新のonSelectが使用される）
+  if (prevProps.onSelect !== nextProps.onSelect) return false
+  if (prevProps.onToggle !== nextProps.onToggle) return false
+  if (prevProps.onDoubleClick !== nextProps.onDoubleClick) return false
+
+  return true
+}
+
+export default memo(TreeNodeComponent, arePropsEqual)
