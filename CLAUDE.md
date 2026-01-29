@@ -86,40 +86,29 @@ npx tsc --noEmit     # TypeScriptチェック
 ```
 
 ## 現在の作業状態
-**最終更新: 2026-01-27**
+**最終更新: 2026-01-30**
 
 ### 今回のセッションで完了した作業
-**大規模リファクタリング（10体サブエージェント並列実行）**
+**パフォーマンス最適化（バンドルサイズ削減）**
 
-1. **App.tsx分割**: 803行→601行（25%削減）
-   - useAppSearchReplace, useAppAIReview, useAppKeyboardShortcuts作成
-2. **useLinter.ts分割**: 605行→3ファイル（140+376+124行）
-   - frontmatterParser.ts, linter.ts分離
-3. **型定義統一**: SearchMatch型を1箇所に集約
-4. **定数一元化**: src/constants/に4ファイル作成
-5. **重複コード共通化**: Rustパス正規化をnormalize_claude_path()に統合
-6. **エラーハンドリング統一**: logError()ユーティリティ追加
-7. **useEffect修正**: eslint-disable削除、二重初期化解消
-8. **console.log削除**: デバッグコード約50行削除
+1. **syntax-highlighter最適化**: 622KB → 61KB（**90%削減**）
+   - PrismLightを使用した軽量版CodeBlockコンポーネント作成
+   - 必要な言語のみ登録（js/ts/json/yaml/md/bash/rust/css/python/toml）
+2. **動的/静的インポート競合解決**:
+   - AIReviewPanel: index.tsからの静的エクスポート削除
+   - MarkdownPreview: PreviewWindowでも遅延読み込みに変更
+3. **main.js削減**: 434KB → 422KB（12KB削減）
+4. **コード分割有効化**:
+   - MarkdownPreview: 分離チャンク 4.64KB
+   - AIReviewPanel: 分離チャンク 8.16KB
 
-### 直近コミット（10件）
-- App.tsxを新しい統合フックで簡略化
-- インポート順序を整理
-- リンターによるコードフォーマット整形
-- console.log/デバッグコードを削除
-- エラーハンドリングを統一
-- SearchMatch/ReplaceResult型定義を統一
-- ハードコードされた定数を一元管理
-- 命名規則を改善
-- 重複コードを共通化
-- useEffect依存配列を修正
+### 直近コミット
+- perf: バンドルサイズ最適化（syntax-highlighter 622KB→61KB）
 
 ### 次のタスク候補
-- パフォーマンス最適化（チャンクサイズ警告対応）
 - 複数ファイル一括置換
 - カスタムテンプレート追加機能
 
 ## 既知の問題・TODO
-- ビルド時のチャンクサイズ警告（syntax-highlighter 622KB）
 - プレビュー専用ウィンドウ（延期中）
 - カスタムテンプレート追加（延期中）
