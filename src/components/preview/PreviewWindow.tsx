@@ -5,12 +5,14 @@
  * メインウィンドウからTauriイベント経由でコンテンツを受信し、
  * リアルタイムでプレビューを更新します。
  */
-import { useCallback, useEffect, useState, type FC } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState, type FC } from 'react'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 
-import { Icon } from '../common'
-import MarkdownPreview from './MarkdownPreview'
+import { Icon, LoadingSpinner } from '../common'
+
+// MarkdownPreviewを遅延読み込み - コード分割を有効にする
+const MarkdownPreview = lazy(() => import('./MarkdownPreview'))
 
 interface PreviewContent {
   content: string
@@ -150,10 +152,16 @@ const PreviewWindow: FC = () => {
       {/* プレビューエリア */}
       <div className="flex-1 overflow-hidden">
         {content ? (
-          <MarkdownPreview
-            content={content}
-            darkMode={darkMode}
-          />
+          <Suspense fallback={
+            <div className="h-full flex items-center justify-center">
+              <LoadingSpinner size="lg" label="Loading preview..." />
+            </div>
+          }>
+            <MarkdownPreview
+              content={content}
+              darkMode={darkMode}
+            />
+          </Suspense>
         ) : (
           <div className={`h-full flex items-center justify-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             <div className="text-center">

@@ -1,11 +1,8 @@
 import { memo, useMemo, type ComponentPropsWithoutRef, type FC } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import remarkGfm from 'remark-gfm'
 
-import Icon from '../common/Icon'
-import LoadingSpinner from '../common/LoadingSpinner'
+import { CodeBlock, Icon, LoadingSpinner } from '../common'
 import ReviewSuggestion, { type Suggestion, type SuggestionSeverity } from './ReviewSuggestion'
 
 /** レビュー結果の状態 */
@@ -102,18 +99,12 @@ const AIReviewPanel: FC<AIReviewPanelProps> = memo(({
       }
 
       return (
-        <SyntaxHighlighter
-          style={darkMode ? oneDark : oneLight}
+        <CodeBlock
           language={match ? match[1] : 'text'}
-          PreTag="div"
-          customStyle={{
-            margin: 0,
-            borderRadius: '0.5rem',
-            fontSize: '0.875rem',
-          }}
+          darkMode={darkMode}
         >
           {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
+        </CodeBlock>
       )
     },
     a({ href, children }: ComponentPropsWithoutRef<'a'>) {

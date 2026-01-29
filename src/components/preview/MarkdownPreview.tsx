@@ -1,9 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef, type ComponentPropsWithoutRef, type FC } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import remarkGfm from 'remark-gfm'
 
+import { CodeBlock } from '../common'
 import { parseMarkdown } from '../../utils/markdownParser'
 import FrontmatterDisplay from './FrontmatterDisplay'
 
@@ -76,18 +75,12 @@ const MarkdownPreview: FC<MarkdownPreviewProps> = memo(({
       }
 
       return (
-        <SyntaxHighlighter
-          style={darkMode ? oneDark : oneLight}
+        <CodeBlock
           language={match ? match[1] : 'text'}
-          PreTag="div"
-          customStyle={{
-            margin: 0,
-            borderRadius: '0.5rem',
-            fontSize: '0.875rem',
-          }}
+          darkMode={darkMode}
         >
           {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
+        </CodeBlock>
       )
     },
     // リンク
