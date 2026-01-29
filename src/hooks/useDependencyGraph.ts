@@ -204,11 +204,18 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
 
   /**
    * ノードを選択する
+   * TreeNodeが渡された場合でも、nodesから対応するGraphNodeを探して保存する
    * @param node - 選択するノード（nullで選択解除）
    */
   const selectNode = useCallback((node: GraphNode | null) => {
-    setSelectedNode(node)
-  }, [])
+    if (node === null) {
+      setSelectedNode(null)
+    } else {
+      // nodesから対応するGraphNodeを探す（TreeNodeが渡された場合の対応）
+      const graphNode = nodes.find(n => n.id === node.id) ?? null
+      setSelectedNode(graphNode)
+    }
+  }, [nodes])
 
   /**
    * ノードの詳細情報を取得する
