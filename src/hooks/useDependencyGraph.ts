@@ -208,15 +208,28 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
    * TreeNodeはGraphNodeを継承（extends）しているため、
    * 型システム上はどちらが渡されてもGraphNode型の変数に代入可能。
    *
-   * 注意: TreeNodeの追加プロパティ（children, isExpanded等）も
-   * selectedNodeに含まれるが、使用時はGraphNodeとして扱うため問題ない。
+   * 最適化: 同じノードIDが選択された場合は状態を更新しない。
+   * これにより、TreeNodeが再構築された場合でも不要な再レンダリングを防ぐ。
    *
    * @param node - 選択するノード（nullで選択解除）
    */
   const selectNode = useCallback((node: GraphNode | TreeNode | null) => {
-    // TreeNodeが渡されてもGraphNodeとして扱える（TypeScriptの構造的部分型）
-    // nullまたはノードをそのまま設定（新しいオブジェクトを作成しない）
-    setSelectedNode(node)
+    setSelectedNode((prev) => {
+      // nullで選択解除
+      if (node === null) {
+        // 既にnullなら更新しない
+        return prev === null ? prev : null
+      }
+
+      // 同じノードIDが選択された場合は状態を維持
+      // （TreeNodeが再構築されても参照は変わらない）
+      if (prev?.id === node.id) {
+        return prev
+      }
+
+      // 新しいノードを選択
+      return node
+    })
   }, [])
 
   /**
