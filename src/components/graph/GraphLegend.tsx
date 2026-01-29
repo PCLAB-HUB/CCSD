@@ -1,16 +1,22 @@
 import { memo } from 'react'
-import { getEdgeStyle, NodeType, EdgeType } from '../../types/graph'
+import {
+  getEdgeStyle,
+  NodeType,
+  EdgeType,
+  NODE_COLORS,
+  NODE_TYPE_LABELS,
+} from '../../types/graph'
 
 interface GraphLegendProps {
   darkMode: boolean
 }
 
 /** ノードタイプの凡例定義 */
-const NODE_LEGEND_ITEMS: { type: NodeType; label: string; color: string }[] = [
-  { type: 'claude-md', label: 'CLAUDE.md', color: '#3B82F6' },
-  { type: 'skill', label: 'スキル', color: '#22C55E' },
-  { type: 'subagent', label: 'サブエージェント', color: '#F97316' },
-  { type: 'unknown', label: '未分類', color: '#A855F7' },
+const NODE_LEGEND_ITEMS: { type: NodeType; label: string }[] = [
+  { type: 'claude-md', label: NODE_TYPE_LABELS['claude-md'] },
+  { type: 'skill', label: NODE_TYPE_LABELS.skill },
+  { type: 'subagent', label: NODE_TYPE_LABELS.subagent },
+  { type: 'unknown', label: NODE_TYPE_LABELS.unknown },
 ]
 
 /** エラーノードの色 */
@@ -40,11 +46,11 @@ const GraphLegend = memo<GraphLegendProps>(({ darkMode }) => {
     >
       {/* ノードの凡例 */}
       <div className="flex items-center gap-3">
-        {NODE_LEGEND_ITEMS.map(({ type, label, color }) => (
+        {NODE_LEGEND_ITEMS.map(({ type, label }) => (
           <div key={type} className="flex items-center gap-1.5">
             <span
               className="w-3 h-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: color }}
+              style={{ backgroundColor: NODE_COLORS[type] }}
             />
             <span className={`text-xs ${textColor}`}>{label}</span>
           </div>

@@ -3,20 +3,13 @@ import { memo } from 'react'
 import { Icon } from '../common'
 
 import type { NodeDetail, GraphNode, NodeType } from '../../types/graph'
+import { NODE_TYPE_LABELS } from '../../types/graph'
 
 interface NodeDetailPanelProps {
   nodeDetail: NodeDetail | null
   onNodeClick: (node: GraphNode) => void
   onOpenFile: (path: string, name: string) => void
   darkMode: boolean
-}
-
-/** ノードタイプの日本語ラベル */
-const NODE_TYPE_LABELS: Record<NodeType, string> = {
-  'claude-md': 'CLAUDE.md',
-  skill: 'スキル',
-  subagent: 'サブエージェント',
-  unknown: '不明',
 }
 
 /** ノードタイプに応じたバッジスタイル */

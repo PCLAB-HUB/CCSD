@@ -150,12 +150,28 @@ export interface EdgeStyle {
 // 定数
 // ============================================================
 
-/** ノードタイプごとの色定義 */
+/**
+ * ノードタイプごとの色定義
+ *
+ * デザインドキュメントに準拠:
+ * - CLAUDE.md: 青 (blue-500)
+ * - スキル: 緑 (emerald-500)
+ * - サブエージェント: オレンジ (orange-500)
+ * - 不明: グレー (gray-500)
+ */
 export const NODE_COLORS: Record<NodeType, string> = {
   'claude-md': '#3b82f6', // blue-500
   skill: '#10b981', // emerald-500
-  subagent: '#8b5cf6', // violet-500
+  subagent: '#F97316', // orange-500
   unknown: '#6b7280', // gray-500
+} as const
+
+/** ノードタイプの日本語ラベル */
+export const NODE_TYPE_LABELS: Record<NodeType, string> = {
+  'claude-md': 'CLAUDE.md',
+  skill: 'スキル',
+  subagent: 'サブエージェント',
+  unknown: '不明',
 } as const
 
 /** エッジタイプごとのスタイル定義 */
