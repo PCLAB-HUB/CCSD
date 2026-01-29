@@ -12,6 +12,12 @@ import { useCallback, useMemo, useState } from 'react'
 import { getFileTree, readFile } from './tauri/files'
 import { isTauri } from './tauri/utils'
 import { logError } from '../utils/errorMessages'
+import {
+  parseReferences,
+  matchesKnownFile,
+  getFileTypeFromPath,
+  extractDescription,
+} from '../utils/referenceParser'
 
 import type {
   GraphNode,
@@ -21,183 +27,8 @@ import type {
   EdgeType,
   ReferenceMatch,
 } from '../types/graph'
-import {
-  getNodeColor,
-  createGraphNodeId,
-  createGraphEdgeId,
-} from '../types/graph'
+import { getNodeColor, createGraphNodeId, createGraphEdgeId } from '../types/graph'
 import type { FileNode } from '../types'
-
-// ============================================================
-// 参照解析ユーティリティ（referenceParser.tsが作成されるまでの暫定実装）
-// ============================================================
-
-/**
- * 既知のファイルパターンにマッチするかどうかを判定
- * @param name - ファイル名
- * @param knownFiles - 既知のファイルパスのSet
- * @returns マッチしたパス、または null
- */
-function matchesKnownFile(name: string, knownFiles: Set<string>): string | null {
-  // 完全一致
-  for (const path of knownFiles) {
-    const fileName = path.split('/').pop() ?? ''
-    const fileNameWithoutExt = fileName.replace(/\.md$/, '')
-
-    if (fileName === name || fileNameWithoutExt === name) {
-      return path
-    }
-  }
-  return null
-}
-
-/**
- * 参照名を正規化（拡張子追加、パス正規化など）
- * @param name - 参照名
- * @returns 正規化された名前
- */
-function normalizeRefName(name: string): string {
-  // .mdがなければ追加
-  if (!name.endsWith('.md')) {
-    return `${name}.md`
-  }
-  return name
-}
-
-/**
- * ファイルパスからファイルタイプを推定
- * @param path - ファイルパス
- * @returns ノードタイプ
- */
-function getFileTypeFromPath(path: string): NodeType {
-  if (path.includes('/skills/') || path.includes('skills/')) {
-    return 'skill'
-  }
-  if (
-    path.includes('/agents/') ||
-    path.includes('agents/') ||
-    path.includes('/commands/') ||
-    path.includes('commands/')
-  ) {
-    return 'subagent'
-  }
-  if (path.endsWith('CLAUDE.md')) {
-    return 'claude-md'
-  }
-  return 'unknown'
-}
-
-/**
- * ファイル内容から説明文を抽出
- * frontmatterのdescriptionまたは最初の見出しを取得
- * @param content - ファイル内容
- * @returns 説明文
- */
-function extractDescription(content: string): string | undefined {
-  // frontmatterからdescriptionを抽出
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/)
-  if (frontmatterMatch) {
-    const descMatch = frontmatterMatch[1].match(/description:\s*["']?([^"'\n]+)["']?/)
-    if (descMatch) {
-      return descMatch[1].trim()
-    }
-  }
-
-  // 最初の見出しを取得
-  const headingMatch = content.match(/^#\s+(.+)$/m)
-  if (headingMatch) {
-    return headingMatch[1].trim()
-  }
-
-  return undefined
-}
-
-/**
- * ファイル内容から参照を解析
- *
- * 検出するパターン:
- * - スキル呼び出し: /skill-name, @skill-name
- * - サブエージェント: agent:name, subagent:name
- * - ファイル参照: [text](path.md), `path.md`
- *
- * @param content - ファイル内容
- * @returns 検出された参照一覧
- */
-function parseReferences(content: string): ReferenceMatch[] {
-  const references: ReferenceMatch[] = []
-  const seenRefs = new Set<string>()
-
-  // パターン定義
-  const patterns: Array<{
-    regex: RegExp
-    type: ReferenceMatch['type']
-    nameExtractor: (match: RegExpMatchArray) => string
-  }> = [
-    // スキル呼び出しパターン: /skill-name
-    {
-      regex: /\/([a-z][a-z0-9-]*(?:\.md)?)\b/gi,
-      type: 'skill',
-      nameExtractor: (m) => m[1],
-    },
-    // @参照パターン: @skill-name
-    {
-      regex: /@([a-z][a-z0-9-_]*(?:\.md)?)\b/gi,
-      type: 'skill',
-      nameExtractor: (m) => m[1],
-    },
-    // エージェント参照: agent:name, subagent:name
-    {
-      regex: /(?:sub)?agent[:\s]+["']?([a-z][a-z0-9-_/]*(?:\.md)?)["']?/gi,
-      type: 'subagent',
-      nameExtractor: (m) => m[1],
-    },
-    // Markdown リンク: [text](path.md)
-    {
-      regex: /\[([^\]]+)\]\(([^)]+\.md)\)/gi,
-      type: 'unknown',
-      nameExtractor: (m) => m[2],
-    },
-    // コードブロック内のファイル参照: `skills/xxx.md`, `agents/xxx.md`
-    {
-      regex: /`((?:skills|agents|commands)\/[a-z][a-z0-9-_/]*\.md)`/gi,
-      type: 'unknown',
-      nameExtractor: (m) => m[1],
-    },
-    // Task tool 参照パターン
-    {
-      regex: /Task\s+tool[^"]*"([^"]+)"/gi,
-      type: 'subagent',
-      nameExtractor: (m) => m[1],
-    },
-  ]
-
-  for (const { regex, type, nameExtractor } of patterns) {
-    let match: RegExpExecArray | null
-    // 新しいRegExpで毎回検索をリセット
-    const re = new RegExp(regex.source, regex.flags)
-    while ((match = re.exec(content)) !== null) {
-      const name = nameExtractor(match)
-
-      // 無効な名前をスキップ
-      if (!name || name.length < 2) continue
-      // URLや明らかなパスをスキップ
-      if (name.startsWith('http') || name.startsWith('//')) continue
-
-      // 重複を排除
-      const key = `${type}:${name}`
-      if (seenRefs.has(key)) continue
-      seenRefs.add(key)
-
-      references.push({
-        type,
-        name: normalizeRefName(name),
-        raw: match[0],
-      })
-    }
-  }
-
-  return references
-}
 
 // ============================================================
 // 型定義
@@ -366,7 +197,8 @@ async function loadFile(path: string): Promise<LoadedFile> {
  * @returns GraphNode
  */
 function createNodeFromFile(file: LoadedFile): GraphNode {
-  const description = file.hasError ? undefined : extractDescription(file.content)
+  // extractDescriptionはnullを返す可能性があるため、undefinedに変換
+  const description = file.hasError ? undefined : (extractDescription(file.content) ?? undefined)
 
   return {
     id: createGraphNodeId(file.path),
@@ -383,16 +215,16 @@ function createNodeFromFile(file: LoadedFile): GraphNode {
  * 参照からエッジを作成
  * @param sourceId - 参照元ノードID
  * @param reference - 参照情報
- * @param knownPaths - 既知のファイルパスのSet
+ * @param knownPathsArray - 既知のファイルパスの配列
  * @returns GraphEdge と 参照先が見つかったかどうか
  */
 function createEdgeFromReference(
   sourceId: string,
   reference: ReferenceMatch,
-  knownPaths: Set<string>
+  knownPathsArray: string[]
 ): { edge: GraphEdge; targetPath: string | null } {
   // 参照先を解決
-  const targetPath = matchesKnownFile(reference.name, knownPaths)
+  const targetPath = matchesKnownFile(reference.name, knownPathsArray)
 
   if (targetPath) {
     // 参照先が見つかった場合
@@ -496,9 +328,6 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
       // ファイルを並列読み込み
       const loadedFiles = await Promise.all(targetPaths.map(loadFile))
 
-      // 既知のパスをSetに格納（参照解決用）
-      const knownPaths = new Set(targetPaths)
-
       // ノードを構築
       const nodeMap = new Map<string, GraphNode>()
       for (const file of loadedFiles) {
@@ -517,7 +346,7 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
         const sourceId = createGraphNodeId(file.path)
 
         for (const ref of references) {
-          const { edge, targetPath } = createEdgeFromReference(sourceId, ref, knownPaths)
+          const { edge, targetPath } = createEdgeFromReference(sourceId, ref, targetPaths)
 
           // 自己参照をスキップ
           if (edge.source === edge.target) continue
