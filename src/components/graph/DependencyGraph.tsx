@@ -1,13 +1,12 @@
 import { memo, useCallback, useEffect, useMemo } from 'react'
 
-import GraphCanvas from './GraphCanvas'
-import GraphLegend from './GraphLegend'
+import DependencyTree from './DependencyTree'
 import NodeDetailPanel from './NodeDetailPanel'
 import { Icon } from '../common'
 import LoadingSpinner from '../common/LoadingSpinner'
 import { useDependencyGraph } from '../../hooks/useDependencyGraph'
 
-import type { GraphNode } from '../../types/graph'
+import type { GraphNode, TreeNode } from '../../types/graph'
 
 interface DependencyGraphProps {
   /** ファイルをエディタで開くハンドラ */
@@ -20,12 +19,11 @@ interface DependencyGraphProps {
  * 依存関係グラフビューア
  *
  * CLAUDE.md、スキル、サブエージェント間の参照関係を
- * フォースレイアウトグラフで可視化するメインコンポーネント
+ * 階層ツリー形式で可視化するメインコンポーネント
  *
  * レイアウト:
  * - ヘッダー: タイトルとリフレッシュボタン
- * - メイン: 左側にグラフキャンバス、右側に詳細パネル
- * - フッター: 凡例
+ * - メイン: 左側にツリー、右側に詳細パネル
  */
 const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) => {
   const {
@@ -38,6 +36,8 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) =>
     refresh,
     loadGraph,
     getNodeDetail,
+    treeRoots,
+    toggleExpand,
   } = useDependencyGraph()
 
   // コンポーネントマウント時にグラフを読み込む
@@ -53,9 +53,9 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) =>
 
   /**
    * ノード選択ハンドラ
-   * GraphCanvasからのシングルクリックで呼ばれる
+   * TreeNodeからのシングルクリックで呼ばれる
    */
-  const handleNodeSelect = useCallback((node: GraphNode | null) => {
+  const handleNodeSelect = useCallback((node: GraphNode | TreeNode | null) => {
     selectNode(node)
   }, [selectNode])
 
@@ -63,7 +63,7 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) =>
    * ノードダブルクリックハンドラ
    * エディタでファイルを開く
    */
-  const handleNodeDoubleClick = useCallback((node: GraphNode) => {
+  const handleNodeDoubleClick = useCallback((node: GraphNode | TreeNode) => {
     // ファイル名をパスから抽出
     const fileName = node.path.split('/').pop() || node.label
     onOpenFile(node.path, fileName)
@@ -144,7 +144,7 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) =>
         <div className="flex items-center gap-2">
           <Icon name="link" className="size-5 text-blue-500" />
           <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            依存関係グラフ
+            依存関係ツリー
           </h2>
           <span className="text-xs text-gray-500 dark:text-gray-400">
             ({nodes.length}ノード, {edges.length}エッジ)
@@ -165,16 +165,16 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) =>
         </button>
       </div>
 
-      {/* メインコンテンツ: グラフ + 詳細パネル */}
+      {/* メインコンテンツ: ツリー + 詳細パネル */}
       <div className="flex flex-1 min-h-0">
-        {/* グラフキャンバス（左側） */}
+        {/* ツリー（左側） */}
         <div className="flex-1 min-w-0">
-          <GraphCanvas
-            nodes={nodes}
-            edges={edges}
-            selectedNode={selectedNode}
-            onSelectNode={handleNodeSelect}
-            onDoubleClickNode={handleNodeDoubleClick}
+          <DependencyTree
+            roots={treeRoots}
+            selectedId={selectedNode?.id ?? null}
+            onToggle={toggleExpand}
+            onSelect={handleNodeSelect}
+            onDoubleClick={handleNodeDoubleClick}
             darkMode={darkMode}
           />
         </div>
@@ -188,11 +188,6 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode }) =>
             darkMode={darkMode}
           />
         </div>
-      </div>
-
-      {/* 凡例（フッター） */}
-      <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
-        <GraphLegend darkMode={darkMode} />
       </div>
     </div>
   )
