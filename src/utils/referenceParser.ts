@@ -15,7 +15,11 @@ import type { ReferenceMatch, NodeType } from '../types/graph'
  * 参照を検出するための正規表現パターン
  */
 const PATTERNS = {
-  // スキル呼び出しパターン
+  // スキル呼び出しパターン（新形式）
+  /** /skill-name 形式（スラッシュコマンド） */
+  slashCommand: /(?:^|\s)\/([a-z][a-z0-9-]*)/gim,
+
+  // スキル呼び出しパターン（既存）
   /** superpowers:skill-name 形式 */
   skillUse: /superpowers:([a-z][a-z0-9-]*)/gi,
   /** "superpowers:skill-name" または 'superpowers:skill-name' 形式 */
@@ -23,7 +27,7 @@ const PATTERNS = {
   /** Skill tool ... "name" 形式 */
   skillTool: /Skill\s+tool.*?["']([^"']+)["']/gi,
 
-  // サブエージェント参照パターン
+  // サブエージェント参照パターン（既存）
   /** subagent_type=name または subagent_type: name 形式 */
   subagentType: /subagent_type[=:]\s*["']?([A-Za-z][A-Za-z0-9-]*)["']?/gi,
   /** Task ... subagent_type ... "name" 形式 */
@@ -36,6 +40,7 @@ const PATTERNS = {
 
 /** パターン名からReferenceMatchのtypeへのマッピング */
 const PATTERN_TO_TYPE: Record<keyof typeof PATTERNS, ReferenceMatch['type']> = {
+  slashCommand: 'skill',
   skillUse: 'skill',
   skillInvoke: 'skill',
   skillTool: 'skill',
