@@ -13,6 +13,17 @@ import ForceGraph2D, {
 } from 'react-force-graph-2d'
 import type { GraphNode, GraphEdge, EdgeType } from '../../types/graph'
 import { getNodeColor, getEdgeStyle } from '../../types/graph'
+import {
+  GRAPH_NODE_RADIUS,
+  GRAPH_SELECTED_BORDER_WIDTH,
+  GRAPH_LABEL_FONT_SIZE,
+  GRAPH_BADGE_SIZE,
+  GRAPH_ARROW_LENGTH,
+  GRAPH_COOLDOWN_TICKS,
+  GRAPH_D3_ALPHA_DECAY,
+  GRAPH_DASH_PATTERN,
+  GRAPH_DOUBLE_CLICK_THRESHOLD,
+} from '../../constants'
 
 // ============================================================
 // 型定義
@@ -64,37 +75,6 @@ interface ClickState {
   nodeId: string | null
   timestamp: number
 }
-
-// ============================================================
-// 定数
-// ============================================================
-
-/** ノードの基本半径 */
-const NODE_RADIUS = 8
-
-/** 選択ノードのボーダー幅 */
-const SELECTED_BORDER_WIDTH = 3
-
-/** ラベルのフォントサイズ */
-const LABEL_FONT_SIZE = 10
-
-/** バッジのサイズ */
-const BADGE_SIZE = 8
-
-/** 矢印の長さ */
-const ARROW_LENGTH = 6
-
-/** シミュレーション冷却ティック数 */
-const COOLDOWN_TICKS = 100
-
-/** D3アルファ減衰率 */
-const D3_ALPHA_DECAY = 0.02
-
-/** ダッシュパターン（破線用） */
-const DASH_PATTERN: [number, number] = [5, 5]
-
-/** ダブルクリック判定の時間閾値（ミリ秒） */
-const DOUBLE_CLICK_THRESHOLD = 300
 
 // ============================================================
 // ヘルパー関数
@@ -185,13 +165,13 @@ const GraphCanvas = memo<GraphCanvasProps>(({
     const nodeColor = node.hasError ? errorFillColor : getNodeColor(node.type)
 
     // ノードサイズをスケールに応じて調整
-    const radius = NODE_RADIUS
-    const fontSize = LABEL_FONT_SIZE / globalScale
+    const radius = GRAPH_NODE_RADIUS
+    const fontSize = GRAPH_LABEL_FONT_SIZE / globalScale
 
     // 選択ノードのボーダーを描画
     if (isSelected) {
       ctx.beginPath()
-      ctx.arc(x, y, radius + SELECTED_BORDER_WIDTH, 0, 2 * Math.PI, false)
+      ctx.arc(x, y, radius + GRAPH_SELECTED_BORDER_WIDTH, 0, 2 * Math.PI, false)
       ctx.fillStyle = selectedBorderColor
       ctx.fill()
     }
@@ -204,7 +184,7 @@ const GraphCanvas = memo<GraphCanvasProps>(({
 
     // unknownタイプのノードには「?」バッジを表示
     if (node.type === 'unknown') {
-      ctx.font = `bold ${BADGE_SIZE}px sans-serif`
+      ctx.font = `bold ${GRAPH_BADGE_SIZE}px sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = '#ffffff'
@@ -232,7 +212,7 @@ const GraphCanvas = memo<GraphCanvasProps>(({
       return null
     }
     // mention, brokenは破線
-    return DASH_PATTERN
+    return GRAPH_DASH_PATTERN
   }, [])
 
   // ノードクリックハンドラ（ダブルクリック検出を含む）
@@ -243,7 +223,7 @@ const GraphCanvas = memo<GraphCanvasProps>(({
     // ダブルクリック判定
     if (
       lastClick.nodeId === node.id &&
-      now - lastClick.timestamp < DOUBLE_CLICK_THRESHOLD
+      now - lastClick.timestamp < GRAPH_DOUBLE_CLICK_THRESHOLD
     ) {
       // ダブルクリック
       onDoubleClickNode(toGraphNode(node))
@@ -278,13 +258,13 @@ const GraphCanvas = memo<GraphCanvasProps>(({
           const x = node.x ?? 0
           const y = node.y ?? 0
           ctx.beginPath()
-          ctx.arc(x, y, NODE_RADIUS + 2, 0, 2 * Math.PI, false)
+          ctx.arc(x, y, GRAPH_NODE_RADIUS + 2, 0, 2 * Math.PI, false)
           ctx.fillStyle = color
           ctx.fill()
         }}
         linkColor={linkColor}
         linkLineDash={linkLineDash}
-        linkDirectionalArrowLength={ARROW_LENGTH}
+        linkDirectionalArrowLength={GRAPH_ARROW_LENGTH}
         linkDirectionalArrowRelPos={1}
         onNodeClick={handleNodeClick}
         onNodeDragEnd={(node) => {
@@ -293,8 +273,8 @@ const GraphCanvas = memo<GraphCanvasProps>(({
           node.fy = node.y
         }}
         onBackgroundClick={handleBackgroundClick}
-        cooldownTicks={COOLDOWN_TICKS}
-        d3AlphaDecay={D3_ALPHA_DECAY}
+        cooldownTicks={GRAPH_COOLDOWN_TICKS}
+        d3AlphaDecay={GRAPH_D3_ALPHA_DECAY}
         enableZoomInteraction={true}
         enablePanInteraction={true}
         backgroundColor={backgroundColor}
