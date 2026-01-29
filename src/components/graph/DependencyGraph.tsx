@@ -178,9 +178,9 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode, init
       </div>
 
       {/* メインコンテンツ: ツリー + 詳細パネル */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ツリー（左側） */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 h-full overflow-hidden">
           <DependencyTree
             roots={treeRoots}
             selectedId={selectedNode?.id ?? null}

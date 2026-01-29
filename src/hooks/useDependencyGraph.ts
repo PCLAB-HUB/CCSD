@@ -63,8 +63,6 @@ export interface UseDependencyGraphReturn {
   getNodeDetail: (node: GraphNode) => NodeDetail
   /** グラフを再読み込みする */
   refresh: () => Promise<void>
-  /** ツリー構造を構築する */
-  buildTree: () => TreeNode[]
   /** ノードの展開/折りたたみをトグル */
   toggleExpand: (nodeId: string) => void
 }
@@ -119,6 +117,13 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
       if (!isTauri()) {
         setNodes(DEMO_NODES)
         setEdges(DEMO_EDGES)
+        // デモデータのルートノード（CLAUDE.md）を自動展開
+        const demoRootIds = DEMO_NODES
+          .filter((n) => n.type === 'claude-md')
+          .map((n) => n.id)
+        if (demoRootIds.length > 0) {
+          setExpandedIds(new Set(demoRootIds))
+        }
         return
       }
 
@@ -190,8 +195,27 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
       }
 
       // 状態を更新
-      setNodes(Array.from(nodeMap.values()))
-      setEdges(Array.from(edgeMap.values()))
+      const allNodes = Array.from(nodeMap.values())
+      const allEdges = Array.from(edgeMap.values())
+      setNodes(allNodes)
+      setEdges(allEdges)
+
+      // ルートノード（CLAUDE.md、または参照されていないノード）を自動展開
+      const referencedNodeIds = new Set(allEdges.map((edge) => edge.target))
+      const claudeMdNodes = allNodes.filter((node) => node.type === 'claude-md')
+      const unreferencedNodes = allNodes.filter((node) => !referencedNodeIds.has(node.id))
+
+      const rootNodeIds = claudeMdNodes.length > 0
+        ? claudeMdNodes.map((n) => n.id)
+        : unreferencedNodes.length > 0
+          ? unreferencedNodes.map((n) => n.id)
+          : allNodes.length > 0
+            ? [allNodes[0].id]
+            : []
+
+      if (rootNodeIds.length > 0) {
+        setExpandedIds(new Set(rootNodeIds))
+      }
     } catch (err) {
       logError('依存グラフ読み込み', err)
       setError('依存グラフの読み込みに失敗しました')
@@ -276,13 +300,28 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
   }, [loadGraph])
 
   /**
-   * ノードとエッジからツリー構造を構築
-   *
-   * - CLAUDE.mdをルートとして優先
-   * - CLAUDE.mdがない場合は、参照されていないノードをルートに
-   * - 循環参照は isCyclic: true として展開しない
+   * ノードの展開/折りたたみをトグル
+   * @param nodeId - 対象ノードのID
    */
-  const buildTree = useCallback((): TreeNode[] => {
+  const toggleExpand = useCallback((nodeId: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(nodeId)) {
+        next.delete(nodeId)
+      } else {
+        next.add(nodeId)
+      }
+      return next
+    })
+  }, [])
+
+  // 派生データのメモ化
+  const memoizedNodes = useMemo(() => nodes, [nodes])
+  const memoizedEdges = useMemo(() => edges, [edges])
+
+  // ツリー構造の自動構築（nodes, edges, expandedIdsが変更されたら再構築）
+  // Note: buildTree をインラインで呼び出し、依存関係を明確にする
+  const memoizedTreeRoots = useMemo((): TreeNode[] => {
     if (nodes.length === 0) {
       return []
     }
@@ -299,8 +338,6 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
     const referencedNodeIds = new Set<string>(edges.map((edge) => edge.target))
 
     // ルートノードの特定
-    // 1. CLAUDE.mdタイプのノードを優先
-    // 2. CLAUDE.mdがなければ、参照されていないノードをルートに
     const claudeMdNodes = nodes.filter((node) => node.type === 'claude-md')
     const unreferencedNodes = nodes.filter((node) => !referencedNodeIds.has(node.id))
 
@@ -320,13 +357,7 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
       nodeMap.set(node.id, node)
     }
 
-    /**
-     * 再帰的にツリーノードを構築
-     * @param node - 現在のノード
-     * @param visited - 訪問済みノードのセット（循環検出用）
-     * @param depth - 現在の深さ
-     * @returns TreeNode
-     */
+    // 再帰的にツリーノードを構築
     function buildTreeNode(
       node: GraphNode,
       visited: Set<string>,
@@ -335,7 +366,6 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
       const isExpanded = expandedIds.has(node.id)
       const isCyclic = visited.has(node.id)
 
-      // 循環参照の場合は子を展開しない
       if (isCyclic) {
         return {
           ...node,
@@ -346,11 +376,9 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
         }
       }
 
-      // 訪問済みに追加
       const newVisited = new Set(visited)
       newVisited.add(node.id)
 
-      // 子ノードを取得
       const childIds = adjacencyList.get(node.id) ?? []
       const children: TreeNode[] = childIds
         .map((childId) => {
@@ -377,34 +405,6 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
     return roots
   }, [nodes, edges, expandedIds])
 
-  /**
-   * ノードの展開/折りたたみをトグル
-   * @param nodeId - 対象ノードのID
-   */
-  const toggleExpand = useCallback((nodeId: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(nodeId)) {
-        next.delete(nodeId)
-      } else {
-        next.add(nodeId)
-      }
-      return next
-    })
-  }, [])
-
-  // 派生データのメモ化
-  const memoizedNodes = useMemo(() => nodes, [nodes])
-  const memoizedEdges = useMemo(() => edges, [edges])
-
-  // ツリー構造の自動構築（nodes, edges, expandedIdsが変更されたら再構築）
-  const memoizedTreeRoots = useMemo(() => {
-    if (nodes.length === 0) {
-      return []
-    }
-    return buildTree()
-  }, [nodes, edges, expandedIds, buildTree])
-
   return {
     // 状態
     nodes: memoizedNodes,
@@ -420,7 +420,6 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
     selectNode,
     getNodeDetail,
     refresh,
-    buildTree,
     toggleExpand,
   }
 }
