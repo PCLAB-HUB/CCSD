@@ -106,8 +106,8 @@ export const DEMO_EDGES: GraphEdge[] = [
 /**
  * ファイルツリーから対象ファイル（.md）を抽出
  *
- * skillsディレクトリ、agentsディレクトリ、commandsディレクトリ、
- * および.claude配下のMarkdownファイルを抽出対象とする
+ * Rustバックエンドが~/.claude/配下のファイルのみを返すため、
+ * すべてのディレクトリを再帰的に探索してMarkdownファイルを収集する
  *
  * @param tree - ファイルツリー
  * @returns 対象ファイルのパス一覧
@@ -118,16 +118,8 @@ export function extractTargetFiles(tree: FileNode[]): string[] {
   function traverse(nodes: FileNode[]): void {
     for (const node of nodes) {
       if (node.file_type === 'directory' && node.children) {
-        // 対象ディレクトリのみ探索
-        const dirName = node.name.toLowerCase()
-        if (
-          dirName === 'skills' ||
-          dirName === 'agents' ||
-          dirName === 'commands' ||
-          node.path.includes('/.claude/')
-        ) {
-          traverse(node.children)
-        }
+        // .claude配下のファイルツリーなので、すべてのディレクトリを探索
+        traverse(node.children)
       } else if (node.file_type === 'file' && node.name.endsWith('.md')) {
         files.push(node.path)
       }
