@@ -3,7 +3,7 @@ import { memo } from 'react'
 import { Icon } from '../common'
 
 import type { NodeDetail, GraphNode, NodeType } from '../../types/graph'
-import { NODE_TYPE_LABELS } from '../../types/graph'
+import { NODE_TYPE_LABELS, NODE_TYPE_BADGE_STYLES, BADGE_BASE_STYLE } from '../../constants/graph'
 
 interface NodeDetailPanelProps {
   nodeDetail: NodeDetail | null
@@ -14,18 +14,8 @@ interface NodeDetailPanelProps {
 
 /** ノードタイプに応じたバッジスタイル */
 const getNodeTypeBadgeStyle = (type: NodeType, darkMode: boolean): string => {
-  const baseStyle = 'px-2 py-0.5 text-xs font-medium rounded-full'
-
-  switch (type) {
-    case 'claude-md':
-      return `${baseStyle} ${darkMode ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700'}`
-    case 'skill':
-      return `${baseStyle} ${darkMode ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`
-    case 'subagent':
-      return `${baseStyle} ${darkMode ? 'bg-violet-900/50 text-violet-300' : 'bg-violet-100 text-violet-700'}`
-    case 'unknown':
-      return `${baseStyle} ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'}`
-  }
+  const mode = darkMode ? 'dark' : 'light'
+  return `${BADGE_BASE_STYLE} ${NODE_TYPE_BADGE_STYLES[mode][type]}`
 }
 
 /**

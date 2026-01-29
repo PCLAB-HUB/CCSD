@@ -1,6 +1,7 @@
 import { memo, useCallback, type FC, type MouseEvent } from 'react'
-import Icon, { type IconName } from '../common/Icon'
-import { type TreeNode as TreeNodeType, type NodeType, NODE_COLORS } from '../../types/graph'
+import Icon from '../common/Icon'
+import type { TreeNode as TreeNodeType } from '../../types/graph'
+import { NODE_COLORS, NODE_TYPE_ICONS, INDENT_SIZE } from '../../constants/graph'
 
 // ============================================================
 // 型定義
@@ -20,21 +21,6 @@ interface TreeNodeProps {
   /** ダークモード */
   darkMode: boolean
 }
-
-// ============================================================
-// 定数
-// ============================================================
-
-/** ノードタイプごとのアイコンマッピング */
-const NODE_TYPE_ICONS: Record<NodeType, IconName> = {
-  'claude-md': 'document',
-  skill: 'code',
-  subagent: 'robot',
-  unknown: 'info',
-} as const
-
-/** インデント幅（px） */
-const INDENT_SIZE = 16
 
 // ============================================================
 // コンポーネント

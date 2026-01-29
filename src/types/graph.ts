@@ -147,180 +147,6 @@ export interface EdgeStyle {
 }
 
 // ============================================================
-// 定数
-// ============================================================
-
-/**
- * ノードタイプごとの色定義
- *
- * デザインドキュメントに準拠:
- * - CLAUDE.md: 青 (blue-500)
- * - スキル: 緑 (emerald-500)
- * - サブエージェント: オレンジ (orange-500)
- * - 不明: グレー (gray-500)
- */
-export const NODE_COLORS: Record<NodeType, string> = {
-  'claude-md': '#3b82f6', // blue-500
-  skill: '#10b981', // emerald-500
-  subagent: '#F97316', // orange-500
-  unknown: '#6b7280', // gray-500
-} as const
-
-/** ノードタイプの日本語ラベル */
-export const NODE_TYPE_LABELS: Record<NodeType, string> = {
-  'claude-md': 'CLAUDE.md',
-  skill: 'スキル',
-  subagent: 'サブエージェント',
-  unknown: '不明',
-} as const
-
-/** エッジタイプごとのスタイル定義 */
-export const EDGE_STYLES: Record<EdgeType, EdgeStyle> = {
-  direct: {
-    stroke: '#64748b', // slate-500
-  },
-  mention: {
-    stroke: '#94a3b8', // slate-400
-    dashArray: '4 2',
-  },
-  broken: {
-    stroke: '#ef4444', // red-500
-    dashArray: '2 2',
-  },
-} as const
-
-// ============================================================
-// ヘルパー関数
-// ============================================================
-
-/**
- * ノードタイプに応じた色を取得
- *
- * @param type - ノードのタイプ
- * @returns 色コード（hex形式）
- */
-export function getNodeColor(type: NodeType): string {
-  return NODE_COLORS[type]
-}
-
-/**
- * エッジタイプに応じたスタイルを取得
- *
- * @param type - エッジのタイプ
- * @returns エッジのスタイル
- */
-export function getEdgeStyle(type: EdgeType): EdgeStyle {
-  return EDGE_STYLES[type]
-}
-
-/**
- * グラフノードのIDを生成
- *
- * ファイルパスをそのままIDとして使用
- *
- * @param path - ファイルパス
- * @returns ノードID
- */
-export function createGraphNodeId(path: string): string {
-  return path
-}
-
-/**
- * グラフエッジのIDを生成
- *
- * source-target形式でIDを生成
- *
- * @param source - 参照元ノードID
- * @param target - 参照先ノードID
- * @returns エッジID
- */
-export function createGraphEdgeId(source: string, target: string): string {
-  return `${source}->${target}`
-}
-
-/**
- * ノードが特定のタイプかどうかを判定する型ガード
- *
- * @param node - 判定対象のノード
- * @param type - 期待するノードタイプ
- * @returns ノードが指定されたタイプの場合true
- */
-export function isNodeType<T extends NodeType>(
-  node: GraphNode,
-  type: T
-): node is GraphNode & { type: T } {
-  return node.type === type
-}
-
-/**
- * エッジが壊れた参照かどうかを判定
- *
- * @param edge - 判定対象のエッジ
- * @returns 壊れた参照の場合true
- */
-export function isBrokenEdge(edge: GraphEdge): boolean {
-  return edge.type === 'broken'
-}
-
-/**
- * グラフ内の壊れた参照をすべて取得
- *
- * @param edges - エッジ一覧
- * @returns 壊れた参照のエッジ一覧
- */
-export function getBrokenEdges(edges: GraphEdge[]): GraphEdge[] {
-  return edges.filter(isBrokenEdge)
-}
-
-/**
- * 特定のノードに関連するエッジを取得
- *
- * @param nodeId - ノードID
- * @param edges - エッジ一覧
- * @returns 関連するエッジ一覧（参照元・参照先両方）
- */
-export function getRelatedEdges(nodeId: string, edges: GraphEdge[]): GraphEdge[] {
-  return edges.filter(edge => edge.source === nodeId || edge.target === nodeId)
-}
-
-/**
- * ノードの入次数を計算（このノードを参照しているエッジ数）
- *
- * @param nodeId - ノードID
- * @param edges - エッジ一覧
- * @returns 入次数
- */
-export function getInDegree(nodeId: string, edges: GraphEdge[]): number {
-  return edges.filter(edge => edge.target === nodeId).length
-}
-
-/**
- * ノードの出次数を計算（このノードが参照しているエッジ数）
- *
- * @param nodeId - ノードID
- * @param edges - エッジ一覧
- * @returns 出次数
- */
-export function getOutDegree(nodeId: string, edges: GraphEdge[]): number {
-  return edges.filter(edge => edge.source === nodeId).length
-}
-
-/**
- * デフォルトのグラフ状態を生成
- *
- * @returns 初期状態のGraphState
- */
-export function createDefaultGraphState(): GraphState {
-  return {
-    nodes: [],
-    edges: [],
-    selectedNode: null,
-    isLoading: false,
-    error: null,
-  }
-}
-
-// ============================================================
 // ツリー表示用の型
 // ============================================================
 
@@ -353,40 +179,25 @@ export interface TreeState {
 }
 
 // ============================================================
-// ツリー用ヘルパー関数
+// Re-exports for backwards compatibility
 // ============================================================
 
-/**
- * GraphNodeからTreeNodeを作成（子ノードなし、展開なし）
- *
- * @param node - 元のGraphNode
- * @param depth - ツリーの深さ（ルート=0）
- * @param isCyclic - 循環参照フラグ（デフォルト: false）
- * @returns 新しいTreeNode
- */
-export function createTreeNode(
-  node: GraphNode,
-  depth: number,
-  isCyclic: boolean = false
-): TreeNode {
-  return {
-    ...node,
-    children: [],
-    isExpanded: false,
-    isCyclic,
-    depth,
-  }
-}
+// Constants
+export { NODE_COLORS, NODE_TYPE_LABELS, EDGE_STYLES } from '../constants/graph'
 
-/**
- * デフォルトのツリー状態を生成
- *
- * @returns 初期状態のTreeState
- */
-export function createDefaultTreeState(): TreeState {
-  return {
-    roots: [],
-    expandedIds: new Set<string>(),
-    selectedNode: null,
-  }
-}
+// Helper functions
+export {
+  getNodeColor,
+  getEdgeStyle,
+  createGraphNodeId,
+  createGraphEdgeId,
+  isNodeType,
+  isBrokenEdge,
+  getBrokenEdges,
+  getRelatedEdges,
+  getInDegree,
+  getOutDegree,
+  createDefaultGraphState,
+  createTreeNode,
+  createDefaultTreeState,
+} from '../utils/graphHelpers'
