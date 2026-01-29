@@ -319,3 +319,74 @@ export function createDefaultGraphState(): GraphState {
     error: null,
   }
 }
+
+// ============================================================
+// ツリー表示用の型
+// ============================================================
+
+/**
+ * ツリーノード（階層表示用）
+ *
+ * GraphNodeを拡張し、ツリー構造に必要な情報を追加
+ */
+export interface TreeNode extends GraphNode {
+  /** 子ノード一覧 */
+  children: TreeNode[]
+  /** 展開状態 */
+  isExpanded: boolean
+  /** 循環参照フラグ（このノードが祖先に存在する場合true） */
+  isCyclic: boolean
+  /** ツリーの深さ（ルート=0） */
+  depth: number
+}
+
+/**
+ * ツリーの状態
+ */
+export interface TreeState {
+  /** ルートノード一覧（CLAUDE.mdまたは参照されていないノード） */
+  roots: TreeNode[]
+  /** 展開中のノードIDセット */
+  expandedIds: Set<string>
+  /** 選択中のノード */
+  selectedNode: TreeNode | null
+}
+
+// ============================================================
+// ツリー用ヘルパー関数
+// ============================================================
+
+/**
+ * GraphNodeからTreeNodeを作成（子ノードなし、展開なし）
+ *
+ * @param node - 元のGraphNode
+ * @param depth - ツリーの深さ（ルート=0）
+ * @param isCyclic - 循環参照フラグ（デフォルト: false）
+ * @returns 新しいTreeNode
+ */
+export function createTreeNode(
+  node: GraphNode,
+  depth: number,
+  isCyclic: boolean = false
+): TreeNode {
+  return {
+    ...node,
+    children: [],
+    isExpanded: false,
+    isCyclic,
+    depth,
+  }
+}
+
+/**
+ * デフォルトのツリー状態を生成
+ *
+ * @returns 初期状態のTreeState
+ */
+export function createDefaultTreeState(): TreeState {
+  return {
+    roots: [],
+    expandedIds: new Set<string>(),
+    selectedNode: null,
+  }
+}
