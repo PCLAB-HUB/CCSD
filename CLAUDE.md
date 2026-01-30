@@ -50,6 +50,7 @@ src-tauri/              # バックエンド (Rust)
 - リンター・AIレビュー
 - ダークモード
 - **依存関係ツリー表示**（階層構造で参照関係を可視化）
+- **ツリーフィルタ機能**（種類別表示/非表示、検索フィルター）
 
 ## 重要な設計パターン
 
@@ -91,27 +92,25 @@ npx tsc --noEmit     # TypeScriptチェック
 **最終更新: 2026-01-30**
 
 ### 今回のセッションで完了した作業
-**依存関係表示をフォースグラフから階層ツリーに変更**
-
-1. **ツリー表示への変更**（4体サブエージェント並列）:
-   - types/graph.ts: TreeNode, TreeState型を追加
-   - hooks/useDependencyGraph.ts: buildTree, toggleExpand追加
-   - components/graph/TreeNode.tsx: 個別ノード表示
-   - components/graph/DependencyTree.tsx: ツリーコンテナ
-
-2. **削除したもの**:
-   - GraphCanvas.tsx, GraphLegend.tsx（フォースグラフ関連）
-   - constants/graph.ts（グラフ描画定数）
-   - react-force-graph-2d依存関係（-38パッケージ）
+**ツリーフィルタ機能を10体のサブエージェントで並列実装:**
+- 型定義（FilterType, FilterState等）: `src/types/treeFilter.ts`
+- フィルターボタン/メニューUI: `src/components/tree/TreeFilter*.tsx`
+- カスタムフック: `src/hooks/useTreeFilter.ts`
+- ユーティリティ関数: `src/utils/treeFilterUtils.ts`
+- テスト: `src/utils/__tests__/treeFilterUtils.test.ts`（48テスト）
+- App.tsx/Sidebar/FileTreeへの統合
 
 ### 直近コミット
-- docs: 依存関係ツリー表示の設計書を追加
-- refactor: 依存関係グラフをツリー表示に変更
+- feat: ツリーフィルタ機能の統合を完了
+- test: ツリーフィルターユーティリティ関数のテストを追加
+- feat: App.tsxにツリーフィルター機能を統合
+- feat: FileTreeコンポーネントにフィルター機能を追加
+- feat: ツリーフィルタ用ユーティリティ関数を追加
+- feat: ツリーフィルターボタンUIコンポーネントを追加
 
 ### 次のタスク候補
 - 複数ファイル一括置換
 - カスタムテンプレート追加機能
-- ツリーフィルタ機能（種類別表示/非表示）
 
 ## 既知の問題・TODO
 - プレビュー専用ウィンドウ（延期中）
