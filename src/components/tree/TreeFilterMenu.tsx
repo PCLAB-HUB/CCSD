@@ -2,14 +2,7 @@ import { memo, useCallback, useEffect, useRef, type FC } from 'react'
 
 import { Icon } from '../common'
 
-/** フィルターオプションの型定義 */
-export type FilterType =
-  | 'all'
-  | 'markdown'
-  | 'json'
-  | 'skill'
-  | 'agent'
-  | 'directory'
+import type { FilterType } from '../../types/treeFilter'
 
 /** フィルターオプションの定義 */
 interface FilterOption {

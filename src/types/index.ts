@@ -220,3 +220,21 @@ export {
   getOutDegree,
   createDefaultGraphState,
 } from './graph'
+
+// ツリーフィルタ関連
+export type {
+  FilterType,
+  FilterState,
+  FilterConfig,
+  FilterConfigMap,
+  TreeFilterActions,
+  UseTreeFilterReturn,
+} from './treeFilter'
+export {
+  FILTER_TYPES,
+  isFilterType,
+  DEFAULT_FILTER_STATE,
+  isDefaultFilterState,
+  getActiveFilterCount,
+  resetFilterState,
+} from './treeFilter'

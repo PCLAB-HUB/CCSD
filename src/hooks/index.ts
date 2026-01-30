@@ -30,6 +30,10 @@ export { useDiff } from './useDiff'
 // 依存関係グラフ
 export { useDependencyGraph } from './useDependencyGraph'
 
+// ツリーフィルター
+export { useTreeFilter } from './useTreeFilter'
+export type { UseTreeFilterReturn } from './useTreeFilter'
+
 // テンプレート機能
 export { useTemplate } from './useTemplate'
 

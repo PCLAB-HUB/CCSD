@@ -11,3 +11,6 @@ export const STORAGE_KEY_STATS_COLLAPSED = 'claude-settings-stats-collapsed'
 
 /** AIレビュー用APIキー保存キー */
 export const STORAGE_KEY_API_KEY = 'claude-dashboard-api-key'
+
+/** ツリーフィルター状態保存キー */
+export const STORAGE_KEY_TREE_FILTER = 'claude-dashboard-tree-filter'
