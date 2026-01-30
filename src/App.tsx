@@ -18,6 +18,7 @@ import {
   useTemplate,
   useUIState,
 } from './hooks'
+import { useTreeFilter } from './hooks/useTreeFilter'
 import { isMarkdownFile } from './utils/markdownParser'
 import { STORAGE_KEY_STATS_COLLAPSED } from './constants'
 
@@ -239,6 +240,32 @@ function App() {
     lastResult: linterResult,
     updateConfig: updateLinterConfig,
   } = useLinter()
+
+  // ツリーフィルター機能
+  const {
+    activeFilters,
+    showHiddenFiles,
+    searchFilter,
+    isMenuOpen: isFilterMenuOpen,
+    toggleFilter,
+    clearFilters,
+    setSearchFilter,
+    toggleHiddenFiles,
+    toggleMenu: toggleFilterMenu,
+    closeMenu: closeFilterMenu,
+    filterNodes,
+    activeFilterCount,
+  } = useTreeFilter()
+
+  // ========================================
+  // 派生状態（フィルタリング）
+  // ========================================
+
+  // fileTreeをフィルタリングしてSidebarに渡す
+  const filteredFileTree = useMemo(
+    () => filterNodes(fileTree),
+    [fileTree, filterNodes]
+  )
 
   // ========================================
   // イベントハンドラ
@@ -471,7 +498,7 @@ function App() {
         <Sidebar
           width={sidebarWidth}
           onWidthChange={setSidebarWidth}
-          fileTree={fileTree}
+          fileTree={filteredFileTree}
           onFileSelect={handleFileSelect}
           selectedPath={selectedFile?.path}
           loading={loading}
@@ -483,6 +510,17 @@ function App() {
           onFavoritesReorder={(startIndex, endIndex) => { void reorderFavorites(startIndex, endIndex) }}
           isFavorite={isFavorite}
           onToggleFavorite={(path, name) => { void toggleFavorite(path, name) }}
+          activeFilters={activeFilters}
+          showHiddenFiles={showHiddenFiles}
+          searchFilter={searchFilter}
+          isFilterMenuOpen={isFilterMenuOpen}
+          activeFilterCount={activeFilterCount}
+          onToggleFilter={toggleFilter}
+          onClearFilters={clearFilters}
+          onSearchFilterChange={setSearchFilter}
+          onToggleHiddenFiles={toggleHiddenFiles}
+          onToggleFilterMenu={toggleFilterMenu}
+          onCloseFilterMenu={closeFilterMenu}
         />
         <MainArea
           selectedFile={selectedFile}

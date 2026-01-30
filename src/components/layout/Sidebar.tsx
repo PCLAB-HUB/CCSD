@@ -3,9 +3,11 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '../common'
 import { FavoritesList } from '../favorites'
 import FileTree from '../tree/FileTree'
+import { TreeFilterButton, TreeFilterMenu } from '../tree'
 
 import type { FileNode } from '../../types'
 import type { FavoriteItem } from '../../types/favorites'
+import type { FilterType } from '../../types/treeFilter'
 
 interface SidebarProps {
   width: number
@@ -22,6 +24,18 @@ interface SidebarProps {
   onFavoritesReorder: (startIndex: number, endIndex: number) => void
   isFavorite: (path: string) => boolean
   onToggleFavorite: (path: string, name: string) => void
+  // フィルター関連props
+  activeFilters: FilterType[]
+  showHiddenFiles: boolean
+  searchFilter: string
+  isFilterMenuOpen: boolean
+  activeFilterCount: number
+  onToggleFilter: (type: FilterType) => void
+  onClearFilters: () => void
+  onSearchFilterChange: (query: string) => void
+  onToggleHiddenFiles: () => void
+  onToggleFilterMenu: () => void
+  onCloseFilterMenu: () => void
 }
 
 const Sidebar = memo<SidebarProps>(({
@@ -39,6 +53,18 @@ const Sidebar = memo<SidebarProps>(({
   onFavoritesReorder,
   isFavorite,
   onToggleFavorite,
+  // フィルター関連
+  activeFilters,
+  showHiddenFiles,
+  searchFilter,
+  isFilterMenuOpen,
+  activeFilterCount,
+  onToggleFilter,
+  onClearFilters,
+  onSearchFilterChange,
+  onToggleHiddenFiles,
+  onToggleFilterMenu,
+  onCloseFilterMenu,
 }) => {
   const [isResizing, setIsResizing] = useState(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -89,9 +115,29 @@ const Sidebar = memo<SidebarProps>(({
             onReorder={onFavoritesReorder}
           />
 
-          {/* ファイルツリーラベル */}
-          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-2">
-            ~/.claude/
+          {/* ファイルツリーラベル + フィルターボタン */}
+          <div className="relative">
+            <div className="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-2">
+              <span>~/.claude/</span>
+              <TreeFilterButton
+                activeFilterCount={activeFilterCount}
+                isMenuOpen={isFilterMenuOpen}
+                onToggleMenu={onToggleFilterMenu}
+              />
+            </div>
+            {/* フィルターメニュー */}
+            {isFilterMenuOpen && (
+              <TreeFilterMenu
+                activeFilters={activeFilters}
+                showHiddenFiles={showHiddenFiles}
+                searchFilter={searchFilter}
+                onToggleFilter={onToggleFilter}
+                onClearFilters={onClearFilters}
+                onSearchFilterChange={onSearchFilterChange}
+                onToggleHiddenFiles={onToggleHiddenFiles}
+                onClose={onCloseFilterMenu}
+              />
+            )}
           </div>
 
           {loading ? (
