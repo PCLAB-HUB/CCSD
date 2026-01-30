@@ -130,10 +130,24 @@ export function isDefaultFilterState(state: FilterState): boolean {
 
 /** アクティブなフィルター数を取得（'all'以外） */
 export function getActiveFilterCount(state: FilterState): number {
-  if (state.activeFilters.includes('all')) {
-    return 0
+  let count = 0
+
+  // フィルタータイプのカウント（'all'以外）
+  if (!state.activeFilters.includes('all')) {
+    count += state.activeFilters.length
   }
-  return state.activeFilters.length + (state.searchFilter ? 1 : 0)
+
+  // テキスト検索フィルター
+  if (state.searchFilter) {
+    count += 1
+  }
+
+  // 隠しファイル表示（デフォルトがfalseなので、trueの場合はアクティブ）
+  if (state.showHiddenFiles) {
+    count += 1
+  }
+
+  return count
 }
 
 /** フィルター状態をリセット */
