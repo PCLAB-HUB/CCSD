@@ -89,26 +89,28 @@ npx tsc --noEmit     # TypeScriptチェック
 ```
 
 ## 現在の作業状態
-**最終更新: 2026-01-30**
+**最終更新: 2026-01-31**
 
 ### 今回のセッションで完了した作業
-**ツリーフィルタ機能を10体のサブエージェントで並列実装:**
-- 型定義（FilterType, FilterState等）: `src/types/treeFilter.ts`
-- フィルターボタン/メニューUI: `src/components/tree/TreeFilter*.tsx`
-- カスタムフック: `src/hooks/useTreeFilter.ts`
-- ユーティリティ関数: `src/utils/treeFilterUtils.ts`
-- テスト: `src/utils/__tests__/treeFilterUtils.test.ts`（48テスト）
-- App.tsx/Sidebar/FileTreeへの統合
+**Git自動化コマンドの調査と計画作成:**
+- UPSIDERの技術記事（Git操作のAI自動化）を分析
+- 記事の`/ship`コマンド + 3つのSkillsの構造を理解
+- 独自のモジュール式設計を提案（/commit, /branch, /pr, /ship）
+- 実装計画を作成: `docs/plans/2026-01-31-git-automation-commands.md`
+- `.claude/`ディレクトリ構造を作成（commands/, skills/）
 
 ### 直近コミット
+- test: TreeFilterButton/TreeFilterMenuのコンポーネントテストを追加
+- fix: getActiveFilterCountでshowHiddenFilesを正しくカウント
+- docs: CLAUDE.mdを更新（ツリーフィルタ機能追加）
 - feat: ツリーフィルタ機能の統合を完了
 - test: ツリーフィルターユーティリティ関数のテストを追加
-- feat: App.tsxにツリーフィルター機能を統合
-- feat: FileTreeコンポーネントにフィルター機能を追加
-- feat: ツリーフィルタ用ユーティリティ関数を追加
-- feat: ツリーフィルターボタンUIコンポーネントを追加
+
+### 未コミットの変更
+- `docs/plans/2026-01-31-git-automation-commands.md` - Git自動化コマンドの実装計画（保留中）
 
 ### 次のタスク候補
+- **Git自動化コマンドの実装**（計画作成済み、保留中）
 - 複数ファイル一括置換
 - カスタムテンプレート追加機能
 
