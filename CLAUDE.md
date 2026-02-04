@@ -120,17 +120,18 @@ Claude Codeを内部で起動するためのターミナル機能が完成。
 #### 解決した問題:
 1. **セッションIDタイミング問題** - `pendingSessionIdRef`と`isSpawningRef`で解決
 2. **ターミナル再作成問題** - useEffectの依存配列からコールバックを削除、refで保持
+3. **カスタムコマンド追加不可** - Tauriでprompt()が動作しないため、Reactモーダルに変更（AddCommandDialog）
+4. **Headerレイアウト崩れ** - whitespace-nowrap, flex-shrink-0でボタン折り返しを防止
 
 ### 直近コミット
 ```
-bdc5d09 fix: TerminalViewのuseEffect依存配列を修正
-612948b docs: CLAUDE.mdにターミナル修正内容を記載
-67aacaf fix: ターミナルセッションIDのタイミング問題を修正
+f9dd75f fix: Headerメニュー項目のレイアウト崩れを修正
+994a49a fix: カスタムコマンド追加ダイアログをReactベースに変更
 ```
 
 ### 開発環境の状態
 - 開発サーバー: ポート1420で動作中
-- Git: mainブランチ、複数コミットpush待ち
+- Git: mainブランチ
 
 ### 次のタスク候補
 - デバッグログの削除（本番用クリーンアップ）

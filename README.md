@@ -1,4 +1,4 @@
-# Claude Code Settings Dashboard
+# Claude Code Settings Dashboard (CCSD)
 
 Claude Codeの設定ファイル（CLAUDE.md、スキル、エージェント等）を一元管理できるデスクトップアプリケーション。
 
@@ -16,6 +16,13 @@ Claude Codeの設定ファイル（CLAUDE.md、スキル、エージェント等
 - **お気に入り**: よく使うファイルをピン留め
 - **バックアップ・復元**: 自動バックアップと履歴管理
 - **インポート/エクスポート**: 単体ファイル・ZIP一括対応
+
+### ターミナル統合
+- **内蔵ターミナル**: PTY（疑似端末）による本格的なターミナル機能
+- **クイックコマンド**: `claude`、`claude --resume`などワンクリック実行
+- **カスタムコマンド**: 任意のコマンドを追加・編集・削除可能
+- **コマンド履歴**: 過去のコマンドを履歴から再実行
+- **リサイズ可能**: パネルの高さをドラッグで調整
 
 ### 依存関係グラフ
 - **ツリービュー**: スキル・エージェント間の参照関係を階層表示
@@ -87,7 +94,7 @@ npm run tauri build
 ```
 ClaudeSettingDashBoard/
 ├── src/                         # フロントエンド (React)
-│   ├── App.tsx                  # ルートコンポーネント
+│   ├── App.tsx                  # ルートコンポーネント、状態管理の統合
 │   ├── components/
 │   │   ├── layout/              # Header, MainArea, Sidebar, ClaudeVersionBadge
 │   │   ├── editor/              # Monaco Editor関連
@@ -95,17 +102,32 @@ ClaudeSettingDashBoard/
 │   │   ├── github/              # GitHubリポジトリパネル
 │   │   ├── search/              # 検索＆置換パネル
 │   │   ├── tabs/                # タブエディタUI
+│   │   ├── terminal/            # ターミナル統合
+│   │   │   ├── TerminalPanel.tsx    # パネル全体
+│   │   │   ├── TerminalView.tsx     # xterm.js表示
+│   │   │   ├── QuickCommands.tsx    # クイックコマンドバー
+│   │   │   └── AddCommandDialog.tsx # コマンド追加ダイアログ
 │   │   └── tree/                # ファイルツリー
-│   ├── hooks/                   # カスタムフック
+│   ├── hooks/                   # カスタムフック (~30個)
 │   │   ├── tauri/               # Tauri API層
-│   │   └── app/                 # 統合フック
+│   │   ├── app/                 # 統合フック
+│   │   ├── useTerminal.ts       # PTY接続・入出力管理
+│   │   ├── useTerminalPanel.ts  # パネル状態管理
+│   │   ├── useQuickCommands.ts  # クイックコマンド管理
+│   │   └── useTerminalHistory.ts # コマンド履歴
 │   ├── types/                   # 型定義
+│   │   └── terminal.ts          # ターミナル関連型
 │   ├── utils/                   # ユーティリティ
 │   └── constants/               # 定数管理
 ├── src-tauri/                   # バックエンド (Rust)
 │   ├── src/
 │   │   ├── lib.rs               # エントリーポイント
-│   │   ├── commands/            # Tauriコマンド（files, backup, version等）
+│   │   ├── commands/            # Tauriコマンド
+│   │   │   ├── files.rs         # ファイル操作
+│   │   │   ├── backup.rs        # バックアップ
+│   │   │   ├── favorites.rs     # お気に入り
+│   │   │   ├── version.rs       # Claude Codeバージョン取得
+│   │   │   └── terminal.rs      # PTY管理（portable-pty）
 │   │   ├── types.rs             # 型定義
 │   │   └── error.rs             # エラー型
 │   ├── capabilities/            # 権限設定
@@ -124,6 +146,7 @@ ClaudeSettingDashBoard/
 | フロントエンド | React 19 + TypeScript |
 | スタイリング | TailwindCSS v4 |
 | エディタ | Monaco Editor |
+| ターミナル | xterm.js + portable-pty (Rust) |
 | バックエンド | Rust |
 | プラグイン | tauri-plugin-fs, tauri-plugin-dialog, tauri-plugin-opener |
 
@@ -142,6 +165,16 @@ npx tsc --noEmit
 # Rustチェック
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
+
+## キーボードショートカット
+
+| ショートカット | 機能 |
+|----------------|------|
+| `Cmd+S` | 保存 |
+| `Cmd+F` | ファイル検索 |
+| `Cmd+H` | 検索＆置換 |
+| `Cmd+B` | サイドバー切り替え |
+| `Cmd+\`` | ターミナル切り替え |
 
 ## ライセンス
 
