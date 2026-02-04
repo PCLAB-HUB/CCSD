@@ -51,6 +51,7 @@ src-tauri/              # バックエンド (Rust)
 - ダークモード
 - **依存関係ツリー表示**（階層構造で参照関係を可視化）
 - **ツリーフィルタ機能**（種類別表示/非表示、検索フィルター）
+- **統計詳細表示**（統計項目クリックで詳細リスト表示）
 
 ## 重要な設計パターン
 
@@ -89,25 +90,23 @@ npx tsc --noEmit     # TypeScriptチェック
 ```
 
 ## 現在の作業状態
-**最終更新: 2026-01-31**
+**最終更新: 2026-02-04**
 
 ### 今回のセッションで完了した作業
-**Git自動化コマンドの調査と計画作成:**
-- UPSIDERの技術記事（Git操作のAI自動化）を分析
-- 記事の`/ship`コマンド + 3つのSkillsの構造を理解
-- 独自のモジュール式設計を提案（/commit, /branch, /pr, /ship）
-- 実装計画を作成: `docs/plans/2026-01-31-git-automation-commands.md`
-- `.claude/`ディレクトリ構造を作成（commands/, skills/）
+**統計項目詳細リスト表示機能:**
+- 統計パネルの各項目（スキル、サブエージェント等）をクリックで詳細リスト表示
+- Rust: `get_stats_detail` コマンド追加（7種類の詳細取得）
+- TypeScript: StatsDetailItem, StatsDetailType, StatsDetail型追加
+- React: StatsDetailModal, StatsDetailListItem コンポーネント
+- Hook: useStatsDetail フック（Tauri API呼び出し）
+- 検索フィルター、アクセシビリティ対応
 
 ### 直近コミット
-- test: TreeFilterButton/TreeFilterMenuのコンポーネントテストを追加
-- fix: getActiveFilterCountでshowHiddenFilesを正しくカウント
-- docs: CLAUDE.mdを更新（ツリーフィルタ機能追加）
-- feat: ツリーフィルタ機能の統合を完了
-- test: ツリーフィルターユーティリティ関数のテストを追加
-
-### 未コミットの変更
-- `docs/plans/2026-01-31-git-automation-commands.md` - Git自動化コマンドの実装計画（保留中）
+- chore: tsconfig.jsonからテストファイルを除外、.gitignore更新
+- feat: StatsPanelにStatsDetailModal統合を追加
+- feat: useStatsDetail フックを追加
+- feat: 統計詳細モーダルコンポーネントを追加
+- feat: 統計詳細表示用のTypeScript型定義を追加
 
 ### 次のタスク候補
 - **Git自動化コマンドの実装**（計画作成済み、保留中）
