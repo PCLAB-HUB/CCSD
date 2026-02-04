@@ -16,15 +16,20 @@ src/                    # フロントエンド (React)
 │   ├── github/         # GitHubリポジトリパネル
 │   ├── search/         # 検索＆置換パネル
 │   ├── tabs/           # タブエディタUI
+│   ├── terminal/       # ターミナル統合（実装中）
 │   ├── tree/           # ファイルツリー
 │   └── ...
 ├── hooks/              # カスタムフック (~30個)
 │   ├── tauri/          # Tauri API層
 │   ├── useFileManager.ts
-│   ├── useSearchReplace.ts
-│   ├── useSearchHighlight.ts
+│   ├── useTerminal.ts      # PTY接続管理
+│   ├── useTerminalPanel.ts # パネル状態管理
+│   ├── useQuickCommands.ts # クイックコマンド管理
+│   ├── useTerminalHistory.ts # コマンド履歴
 │   └── ...
 ├── types/              # 型定義
+│   ├── terminal.ts     # ターミナル関連型
+│   └── ...
 └── utils/              # ユーティリティ
 
 src-tauri/              # バックエンド (Rust)
@@ -35,6 +40,7 @@ src-tauri/              # バックエンド (Rust)
 │   │   ├── backup.rs   # バックアップ
 │   │   ├── favorites.rs # お気に入り
 │   │   ├── version.rs  # Claude Codeバージョン取得
+│   │   ├── terminal.rs # PTY管理（portable-pty）
 │   │   └── ...
 │   ├── types.rs        # 型定義
 │   └── error.rs        # エラー型
@@ -63,22 +69,11 @@ src-tauri/              # バックエンド (Rust)
 ### スキル/エージェント情報表示
 - **メタデータ表示**: 発動条件、連携スキル/エージェント、使用例
 - **英語→日本語簡易翻訳**: パターンマッチによる自動翻訳
-  - 動詞・名詞・フレーズパターン辞書（`translationPatterns.ts`）
-  - 発動条件・キーポイントに自動適用
 - **「ウェブで翻訳」ボタン**: 翻訳しきれない英文をGoogle翻訳で確認
-  - 英語が残っている場合のみ表示
-  - tauri-plugin-openerでブラウザを起動
 
 ### Claude Code情報表示
 - **バージョン表示**: Headerの検索バー左にClaude Codeバージョンをバッジ表示
-  - Rust側で`claude --version`コマンドを実行
-  - `src-tauri/src/commands/version.rs`
-  - `useClaudeVersion`フックで取得
 - **GitHub人気リポジトリ**: Header直下に折りたたみパネル
-  - GitHub Search APIでclaude+code関連リポジトリ上位10件を表示
-  - sessionStorageでキャッシュ（30分有効）
-  - `useGitHubRepos`フックで取得
-  - `GitHubReposPanel`コンポーネント
 
 ## 重要な設計パターン
 
@@ -102,12 +97,6 @@ App.tsxで統合フックを使用（リファクタリング後）:
 - api.ts: APIエンドポイント、モデル名
 - ui.ts: レイアウト、スコア範囲
 
-### 検索ハイライトの流れ
-```
-SearchReplacePanel → useSearchReplace → App.tsx同期 → searchHighlight
-→ MainArea → useSearchHighlight → Monaco Editor decorations
-```
-
 ## 開発コマンド
 ```bash
 npm run tauri dev    # 開発サーバー起動
@@ -119,40 +108,60 @@ npx tsc --noEmit     # TypeScriptチェック
 ## 現在の作業状態
 **最終更新: 2026-02-04**
 
-### 今回セッションで完了した作業
-1. **Claude Codeバージョン表示** (d3440ad)
-   - Headerの検索バー左にバージョンバッジを表示
-   - Rust側で`claude --version`を実行してバージョン取得
-   - `ClaudeVersionBadge`コンポーネント追加
+### 今回セッションで実装した機能（未完了）
+**ターミナル統合機能** - Claude Codeを内部で起動するための機能
 
-2. **GitHub人気リポジトリパネル** (d3440ad)
-   - Header直下に折りたたみパネルを配置
-   - GitHub Search APIでclaude+code関連リポジトリ上位10件を表示
-   - sessionStorageでキャッシュ（30分有効、レート制限対策）
-   - `GitHubReposPanel`コンポーネント追加
+#### 実装済みファイル:
+- `src-tauri/src/commands/terminal.rs` - Rust PTY管理（portable-pty）
+- `src/types/terminal.ts` - TypeScript型定義
+- `src/hooks/useTerminal.ts` - PTY接続・入出力管理
+- `src/hooks/useTerminalPanel.ts` - パネル状態管理
+- `src/hooks/useQuickCommands.ts` - クイックコマンド管理
+- `src/hooks/useTerminalHistory.ts` - コマンド履歴管理
+- `src/components/terminal/` - UIコンポーネント群
+  - TerminalPanel.tsx（forwardRef対応済み）
+  - TerminalView.tsx（xterm.js）
+  - QuickCommands.tsx
+  - TerminalTabs.tsx
+  - TerminalToolbar.tsx
 
-3. **サブエージェント並列実行**
-   - rust-engineer: Tauriコマンド実装
-   - typescript-pro x2: フック・型定義実装
-   - react-specialist: UIコンポーネント実装
+#### 設計ドキュメント:
+- `docs/plans/2026-02-04-terminal-integration-design.md`
+
+### 未解決の問題（次セッションで対応必要）
+**Claudeボタンを押してもClaude Codeが起動しない**
+
+#### 調査・修正済みの内容:
+1. コマンド名の不一致修正 (`write_to_terminal` → `write_terminal`)
+2. セッションID管理の追加（spawn_terminalの戻り値を保存）
+3. TerminalPanelをforwardRefに変更してref接続を修正
+
+#### デバッグのヒント:
+- Rust側のログ: `[INFO] Spawning terminal...` が出力されているか確認
+- ブラウザ開発者ツールでコンソールエラーを確認
+- `useTerminal`の`onOutput`コールバックが呼ばれているか確認
+- Tauriイベント `terminal:output` が正しく発火しているか確認
+
+#### 確認すべきポイント:
+1. `spawn_terminal`が実際に呼ばれているか
+2. PTYが正常に起動しているか（Rust側のログ確認）
+3. イベントリスナーが正しく設定されているか
+4. セッションIDのマッチングが正しいか
+5. xterm.jsへのwrite呼び出しが成功しているか
 
 ### 直近コミット
-- feat: Claude CodeバージョンとGitHubリポジトリ表示機能を統合 (d3440ad)
-- feat: Claude Code情報表示UIコンポーネントを追加 (d09afe2)
-- feat: GitHub API統合とuseGitHubReposフック追加 (77e08b1)
-- feat: Claude Codeバージョン取得フロントエンドフックを追加 (50725e9)
-
-### 次のタスク候補
-- **Git自動化コマンドの実装**（計画作成済み、保留中）
-- 複数ファイル一括置換
-- カスタムテンプレート追加機能
-- 関係性フローチャート表示（graphviz形式の可視化）
-- 翻訳パターンの追加（必要に応じて）
+```
+ca3a86d fix: TerminalPanelにforwardRefを追加しref接続を修正
+aff70cf fix: ターミナルのセッションID管理を修正
+1d9fbe2 fix: ターミナルパネルのレイアウトを右寄せに変更
+1108a61 feat: ターミナル統合機能を追加
+```
 
 ### 開発環境の状態
-- 開発サーバー: ポート1420で起動中
-- Git: mainブランチ、7コミットpush待ち
+- 開発サーバー: ポート1420
+- Git: mainブランチ、複数コミットpush待ち
 
 ## 既知の問題・TODO
+- **ターミナル統合機能が動作しない**（優先度: 高）
 - プレビュー専用ウィンドウ（延期中）
 - カスタムテンプレート追加（延期中）

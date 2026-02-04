@@ -285,6 +285,7 @@ function App() {
     isOpen: isTerminalOpen,
     height: terminalHeight,
     activeTab: terminalActiveTab,
+    open: openTerminalPanel,
     toggle: toggleTerminal,
     setHeight: setTerminalHeight,
     setActiveTab: setTerminalActiveTab,
@@ -304,9 +305,11 @@ function App() {
     handleXtermData,
   } = useTerminal({
     onOutput: (data) => {
+      console.log('[App] onOutput received:', { dataLength: data.length, hasRef: !!terminalPanelRef.current })
       terminalPanelRef.current?.write(data)
     },
     onError: (message) => {
+      console.error('[App] onError received:', message)
       showError(`ターミナルエラー: ${message}`)
     },
   })
@@ -508,18 +511,36 @@ function App() {
    * ターミナルでコマンドを実行
    */
   const handleExecuteTerminalCommand = useCallback(async (command: string) => {
+    console.log('[App] handleExecuteTerminalCommand called:', { command, terminalStatus, isTerminalOpen })
+
+    // まずパネルを開く（TerminalViewがマウントされるために必要）
+    if (!isTerminalOpen) {
+      console.log('[App] Opening terminal panel...')
+      openTerminalPanel()
+      // パネルが開いてTerminalViewがマウントされるのを待つ
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+
     // ターミナルが起動していなければ起動
     if (terminalStatus === 'idle') {
+      console.log('[App] Terminal is idle, spawning...')
       const spawned = await spawnTerminal()
-      if (!spawned) return
-      // 少し待ってからコマンド送信
+      console.log('[App] spawnTerminal result:', spawned)
+      if (!spawned) {
+        console.error('[App] Failed to spawn terminal')
+        return
+      }
+      // シェルの起動を待つ（プロンプトが表示されるまで）
+      console.log('[App] Waiting 500ms for shell to start...')
       await new Promise(resolve => setTimeout(resolve, 500))
     }
 
     // コマンドを送信（改行を付加）
-    await writeToTerminal(command + '\n')
+    console.log('[App] Sending command to terminal...')
+    const writeResult = await writeToTerminal(command + '\n')
+    console.log('[App] writeToTerminal result:', writeResult)
     addCommandToHistory(command)
-  }, [terminalStatus, spawnTerminal, writeToTerminal, addCommandToHistory])
+  }, [terminalStatus, isTerminalOpen, openTerminalPanel, spawnTerminal, writeToTerminal, addCommandToHistory])
 
   /**
    * ターミナルからのデータ入力

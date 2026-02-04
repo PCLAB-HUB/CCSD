@@ -124,6 +124,10 @@ export function useTerminal(options?: {
   const isActiveRef = useRef(false)
   // 現在のセッションID
   const sessionIdRef = useRef<string | null>(null)
+  // 起動中のセッションID（spawn_terminal呼び出し中に使用）
+  const pendingSessionIdRef = useRef<string | null>(null)
+  // スポーン中フラグ（イベント受信のタイミング問題を解決）
+  const isSpawningRef = useRef(false)
 
   // クリーンアップ
   useEffect(() => {
@@ -155,7 +159,47 @@ export function useTerminal(options?: {
   )
 
   /**
+   * セッションIDが許可されたものかチェックする
+   *
+   * @param eventSessionId イベントのセッションID
+   * @returns 許可されていればtrue
+   */
+  const isAllowedSession = useCallback((eventSessionId: string): boolean => {
+    console.log('[useTerminal] isAllowedSession check:', {
+      eventSessionId,
+      currentSessionId: sessionIdRef.current,
+      pendingSessionId: pendingSessionIdRef.current,
+      isSpawning: isSpawningRef.current,
+    })
+
+    // アクティブなセッションと一致
+    if (sessionIdRef.current === eventSessionId) {
+      console.log('[useTerminal] Allowed: matches current session')
+      return true
+    }
+    // 起動中のセッションと一致
+    if (pendingSessionIdRef.current === eventSessionId) {
+      console.log('[useTerminal] Allowed: matches pending session')
+      return true
+    }
+    // スポーン中で、まだセッションIDが設定されていない場合は受け入れる
+    // （最初のイベントでpendingSessionIdRefを設定）
+    if (isSpawningRef.current && !sessionIdRef.current && !pendingSessionIdRef.current) {
+      console.log('[useTerminal] Allowed: first event during spawn, setting pending session')
+      pendingSessionIdRef.current = eventSessionId
+      return true
+    }
+    console.log('[useTerminal] Rejected: no matching session')
+    return false
+  }, [])
+
+  /**
    * イベントリスナーを設定する
+   *
+   * 注意: セッションIDのフィルタリングでは、以下のケースを考慮:
+   * 1. sessionIdRef.current - 確立されたセッション
+   * 2. pendingSessionIdRef.current - 起動中のセッション
+   * 3. isSpawningRef.current - スポーン処理中（最初のイベントを受け入れる）
    */
   const setupEventListeners = useCallback(async () => {
     if (!isTauri()) return
@@ -166,8 +210,9 @@ export function useTerminal(options?: {
         'terminal:output',
         (event) => {
           if (!isMountedRef.current) return
-          // 自分のセッションの出力のみ処理
-          if (event.payload.session_id !== sessionIdRef.current) return
+
+          const eventSessionId = event.payload.session_id
+          if (!isAllowedSession(eventSessionId)) return
 
           const { data } = event.payload
           addOutput('stdout', data)
@@ -181,11 +226,15 @@ export function useTerminal(options?: {
         'terminal:exit',
         (event) => {
           if (!isMountedRef.current) return
-          if (event.payload.session_id !== sessionIdRef.current) return
+
+          const eventSessionId = event.payload.session_id
+          if (!isAllowedSession(eventSessionId)) return
 
           const { code } = event.payload
           isActiveRef.current = false
+          isSpawningRef.current = false
           sessionIdRef.current = null
+          pendingSessionIdRef.current = null
           setStatus('idle')
           setSessionId(null)
           addOutput('system', `\r\n[プロセス終了: コード ${code}]`)
@@ -199,7 +248,9 @@ export function useTerminal(options?: {
         'terminal:error',
         (event) => {
           if (!isMountedRef.current) return
-          if (event.payload.session_id !== sessionIdRef.current) return
+
+          const eventSessionId = event.payload.session_id
+          if (!isAllowedSession(eventSessionId)) return
 
           const { error } = event.payload
           setStatus('error')
@@ -212,7 +263,7 @@ export function useTerminal(options?: {
     } catch (error) {
       console.error('Failed to setup terminal event listeners:', error)
     }
-  }, [addOutput, onOutput, onExit, onError])
+  }, [addOutput, onOutput, onExit, onError, isAllowedSession])
 
   /**
    * イベントリスナーをクリーンアップする
@@ -232,7 +283,7 @@ export function useTerminal(options?: {
         return false
       }
 
-      if (isActiveRef.current) {
+      if (isActiveRef.current || isSpawningRef.current) {
         setLastError('ターミナルは既に起動しています')
         return false
       }
@@ -243,18 +294,30 @@ export function useTerminal(options?: {
       }
 
       try {
+        // スポーン中フラグを立てる（イベント受信を許可するため）
+        isSpawningRef.current = true
+        pendingSessionIdRef.current = null
+        console.log('[useTerminal] Starting spawn, isSpawning=true')
+
         // イベントリスナーを先に設定
         await setupEventListeners()
+        console.log('[useTerminal] Event listeners set up')
 
         // ターミナルを起動（セッションIDが返される）
+        // この間にRustからイベントが発火され、isAllowedSessionがpendingSessionIdRefを設定する
+        console.log('[useTerminal] Calling spawn_terminal...')
         const newSessionId = await invoke<string>('spawn_terminal', {
           rows: mergedConfig.rows,
           cols: mergedConfig.cols,
           workingDir: mergedConfig.cwd,
         })
+        console.log('[useTerminal] spawn_terminal returned:', newSessionId)
 
         if (isMountedRef.current) {
+          // pendingからactiveに昇格
           sessionIdRef.current = newSessionId
+          pendingSessionIdRef.current = null
+          isSpawningRef.current = false
           setSessionId(newSessionId)
           isActiveRef.current = true
           setStatus('running')
@@ -265,6 +328,8 @@ export function useTerminal(options?: {
         return true
       } catch (error) {
         console.error('Failed to spawn terminal:', error)
+        isSpawningRef.current = false
+        pendingSessionIdRef.current = null
         cleanupEventListeners()
 
         if (isMountedRef.current) {
@@ -286,20 +351,43 @@ export function useTerminal(options?: {
    * ターミナルに入力を送信する
    */
   const writeToTerminal = useCallback(async (data: string): Promise<boolean> => {
-    if (!isTauri()) return false
-    if (!isActiveRef.current || !sessionIdRef.current) {
-      console.warn('Terminal is not active')
+    console.log('[useTerminal] writeToTerminal called:', {
+      dataLength: data.length,
+      data: data.substring(0, 50),
+      currentSessionId: sessionIdRef.current,
+      pendingSessionId: pendingSessionIdRef.current,
+      isActive: isActiveRef.current,
+      isSpawning: isSpawningRef.current,
+    })
+
+    if (!isTauri()) {
+      console.warn('[useTerminal] Not in Tauri environment')
+      return false
+    }
+
+    // アクティブなセッションまたはペンディングセッションのIDを取得
+    const targetSessionId = sessionIdRef.current ?? pendingSessionIdRef.current
+
+    if (!targetSessionId) {
+      console.warn('[useTerminal] Terminal is not active (no session ID)')
+      return false
+    }
+
+    if (!isActiveRef.current && !isSpawningRef.current) {
+      console.warn('[useTerminal] Terminal is not active (flags false)')
       return false
     }
 
     try {
+      console.log('[useTerminal] Invoking write_terminal with sessionId:', targetSessionId)
       await invoke('write_terminal', {
-        sessionId: sessionIdRef.current,
+        sessionId: targetSessionId,
         data
       })
+      console.log('[useTerminal] write_terminal success')
       return true
     } catch (error) {
-      console.error('Failed to write to terminal:', error)
+      console.error('[useTerminal] Failed to write to terminal:', error)
       return false
     }
   }, [])
@@ -332,15 +420,21 @@ export function useTerminal(options?: {
    */
   const closeTerminal = useCallback(async (): Promise<boolean> => {
     if (!isTauri()) return false
-    if (!isActiveRef.current || !sessionIdRef.current) return true // 既に終了している
+    if (!isActiveRef.current && !isSpawningRef.current) return true // 既に終了している
+
+    const targetSessionId = sessionIdRef.current ?? pendingSessionIdRef.current
 
     try {
-      await invoke('close_terminal', { sessionId: sessionIdRef.current })
+      if (targetSessionId) {
+        await invoke('close_terminal', { sessionId: targetSessionId })
+      }
       cleanupEventListeners()
 
       if (isMountedRef.current) {
         isActiveRef.current = false
+        isSpawningRef.current = false
         sessionIdRef.current = null
+        pendingSessionIdRef.current = null
         setSessionId(null)
         setStatus('idle')
         addOutput('system', '\r\n[ターミナルを終了しました]')
@@ -375,8 +469,9 @@ export function useTerminal(options?: {
   // コンポーネントのアンマウント時にターミナルを終了
   useEffect(() => {
     return () => {
-      if (isActiveRef.current && sessionIdRef.current) {
-        void invoke('close_terminal', { sessionId: sessionIdRef.current }).catch(() => {
+      const targetSessionId = sessionIdRef.current ?? pendingSessionIdRef.current
+      if ((isActiveRef.current || isSpawningRef.current) && targetSessionId) {
+        void invoke('close_terminal', { sessionId: targetSessionId }).catch(() => {
           // アンマウント時のエラーは無視
         })
       }
