@@ -11,6 +11,8 @@ interface NodeDetailPanelProps {
   onNodeClick: (node: GraphNode | TreeNode) => void
   onOpenFile: (path: string, name: string) => void
   darkMode: boolean
+  /** パネルの幅（ピクセル） */
+  width?: number
 }
 
 /** ノードタイプに応じたバッジスタイル */
@@ -228,16 +230,18 @@ const NodeDetailPanel = memo<NodeDetailPanelProps>(({
   onNodeClick,
   onOpenFile,
   darkMode,
+  width = 280,
 }) => {
   // ノードが選択されていない場合
   if (!nodeDetail) {
     return (
       <div
         className={`
-          w-[280px] flex-shrink-0 flex flex-col items-center justify-center
+          flex-shrink-0 flex flex-col items-center justify-center
           border-l p-4
           ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}
         `}
+        style={{ width }}
       >
         <Icon
           name="infoCircle"
@@ -255,10 +259,11 @@ const NodeDetailPanel = memo<NodeDetailPanelProps>(({
   return (
     <div
       className={`
-        w-[280px] flex-shrink-0 flex flex-col
+        flex-shrink-0 flex flex-col
         border-l overflow-hidden
         ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}
       `}
+      style={{ width }}
     >
       {/* スクロール可能なコンテンツ領域 */}
       <div className="flex-1 overflow-y-auto">

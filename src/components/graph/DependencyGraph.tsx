@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState, useRef } from 'react'
 
 import DependencyTree from './DependencyTree'
 import NodeDetailPanel from './NodeDetailPanel'
@@ -7,6 +7,15 @@ import LoadingSpinner from '../common/LoadingSpinner'
 import { useDependencyGraph } from '../../hooks/useDependencyGraph'
 
 import type { GraphNode, TreeNode } from '../../types/graph'
+
+/** 詳細パネル幅のlocalStorageキー */
+const DETAIL_PANEL_WIDTH_KEY = 'graph-detail-panel-width'
+/** デフォルト幅 */
+const DEFAULT_PANEL_WIDTH = 280
+/** 最小幅 */
+const MIN_PANEL_WIDTH = 200
+/** 最大幅 */
+const MAX_PANEL_WIDTH = 500
 
 interface DependencyGraphProps {
   /** ファイルをエディタで開くハンドラ */
@@ -41,6 +50,56 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode, init
     treeRoots,
     toggleExpand,
   } = useDependencyGraph()
+
+  // 詳細パネルの幅（localStorageから復元）
+  const [detailPanelWidth, setDetailPanelWidth] = useState(() => {
+    const saved = localStorage.getItem(DETAIL_PANEL_WIDTH_KEY)
+    return saved ? Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, parseInt(saved, 10))) : DEFAULT_PANEL_WIDTH
+  })
+  const [isResizing, setIsResizing] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // 幅変更時にlocalStorageに保存
+  const handleWidthChange = useCallback((newWidth: number) => {
+    const clampedWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth))
+    setDetailPanelWidth(clampedWidth)
+    localStorage.setItem(DETAIL_PANEL_WIDTH_KEY, String(clampedWidth))
+  }, [])
+
+  // リサイズ開始
+  const handleResizeStart = useCallback(() => {
+    setIsResizing(true)
+  }, [])
+
+  // リサイズ処理
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !containerRef.current) return
+      const containerRect = containerRef.current.getBoundingClientRect()
+      // コンテナの右端からのマウス位置で幅を計算
+      const newWidth = containerRect.right - e.clientX
+      handleWidthChange(newWidth)
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      // リサイズ中はカーソルを固定
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing, handleWidthChange])
 
   // コンポーネントマウント時にグラフを読み込む
   useEffect(() => {
@@ -178,7 +237,7 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode, init
       </div>
 
       {/* メインコンテンツ: ツリー + 詳細パネル */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden">
         {/* ツリー（左側） */}
         <div className="flex-1 min-w-0 h-full overflow-hidden">
           <DependencyTree
@@ -191,15 +250,36 @@ const DependencyGraph = memo<DependencyGraphProps>(({ onOpenFile, darkMode, init
           />
         </div>
 
+        {/* リサイザー */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="詳細パネルの幅を調整"
+          aria-valuenow={detailPanelWidth}
+          aria-valuemin={MIN_PANEL_WIDTH}
+          aria-valuemax={MAX_PANEL_WIDTH}
+          tabIndex={0}
+          className="resizer"
+          onMouseDown={handleResizeStart}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') {
+              e.preventDefault()
+              handleWidthChange(detailPanelWidth + 10)
+            } else if (e.key === 'ArrowRight') {
+              e.preventDefault()
+              handleWidthChange(detailPanelWidth - 10)
+            }
+          }}
+        />
+
         {/* 詳細パネル（右側） */}
-        <div className="w-64 flex-shrink-0">
-          <NodeDetailPanel
-            nodeDetail={nodeDetail}
-            onNodeClick={handleNodeSelect}
-            onOpenFile={onOpenFile}
-            darkMode={darkMode}
-          />
-        </div>
+        <NodeDetailPanel
+          nodeDetail={nodeDetail}
+          onNodeClick={handleNodeSelect}
+          onOpenFile={onOpenFile}
+          darkMode={darkMode}
+          width={detailPanelWidth}
+        />
       </div>
     </div>
   )
