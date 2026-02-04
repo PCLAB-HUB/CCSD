@@ -62,6 +62,8 @@ use commands::{
     // stats
     get_stats,
     get_stats_detail,
+    // version
+    get_claude_version,
 };
 
 /// アプリケーションのエントリーポイント
@@ -114,6 +116,8 @@ pub fn run() {
             // 統計
             get_stats,
             get_stats_detail,
+            // バージョン
+            get_claude_version,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

@@ -18,10 +18,13 @@ import {
   useTemplate,
   useUIState,
 } from './hooks'
+import { useClaudeVersion } from './hooks/useClaudeVersion'
+import { useGitHubRepos } from './hooks/useGitHubRepos'
 import { useTreeFilter } from './hooks/useTreeFilter'
 import { isMarkdownFile } from './utils/markdownParser'
 import { STORAGE_KEY_STATS_COLLAPSED } from './constants'
 
+import GitHubReposPanel from './components/github/GitHubReposPanel'
 import Header from './components/layout/Header'
 import MainArea from './components/layout/MainArea'
 import Sidebar from './components/layout/Sidebar'
@@ -97,6 +100,21 @@ function App() {
     setSidebarWidth,
     toggleReadOnly,
   } = useUIState()
+
+  // Claude Codeバージョン
+  const {
+    version: claudeVersion,
+    loading: claudeVersionLoading,
+    error: claudeVersionError,
+  } = useClaudeVersion()
+
+  // GitHubリポジトリ
+  const {
+    repos: githubRepos,
+    loading: githubLoading,
+    error: githubError,
+    refetch: refetchGithubRepos,
+  } = useGitHubRepos()
 
   // ファイル管理
   const {
@@ -484,7 +502,21 @@ function App() {
         onOpenSearchReplace={openSearchReplacePanel}
         showDependencyGraph={showDependencyGraph}
         onToggleDependencyGraph={toggleDependencyGraph}
+        claudeVersion={claudeVersion}
+        claudeVersionLoading={claudeVersionLoading}
+        claudeVersionError={claudeVersionError}
       />
+
+      {/* GitHub人気リポジトリパネル */}
+      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+        <GitHubReposPanel
+          repos={githubRepos}
+          loading={githubLoading}
+          error={githubError}
+          darkMode={darkMode}
+          onRefetch={refetchGithubRepos}
+        />
+      </div>
 
       {stats && (
         <StatsPanel

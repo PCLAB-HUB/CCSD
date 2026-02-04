@@ -2,6 +2,7 @@ import { memo } from 'react'
 
 import SearchBar from '../search/SearchBar'
 import SearchNavigation from '../search/SearchNavigation'
+import ClaudeVersionBadge from './ClaudeVersionBadge'
 import StatusBadges from './StatusBadges'
 import ToolbarButtons from './ToolbarButtons'
 
@@ -42,6 +43,10 @@ interface HeaderProps {
   // 依存関係グラフ
   showDependencyGraph?: boolean
   onToggleDependencyGraph?: () => void
+  // Claude Codeバージョン
+  claudeVersion?: string | null
+  claudeVersionLoading?: boolean
+  claudeVersionError?: string | null
 }
 
 const Header = memo<HeaderProps>(({
@@ -76,6 +81,9 @@ const Header = memo<HeaderProps>(({
   onOpenSearchReplace,
   showDependencyGraph = false,
   onToggleDependencyGraph,
+  claudeVersion,
+  claudeVersionLoading = false,
+  claudeVersionError,
 }) => {
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -118,6 +126,12 @@ const Header = memo<HeaderProps>(({
       </div>
 
       <div className="flex items-center gap-4">
+        <ClaudeVersionBadge
+          version={claudeVersion ?? null}
+          loading={claudeVersionLoading}
+          error={claudeVersionError ?? null}
+        />
+
         <SearchBar
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
