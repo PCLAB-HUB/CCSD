@@ -55,7 +55,7 @@ const ClaudeVersionBadge: FC<ClaudeVersionBadgeProps> = memo(({
   // 正常表示
   return (
     <div
-      className="flex items-center gap-1.5 px-2 py-1 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800"
+      className="flex items-center gap-1.5 px-2 py-1 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 whitespace-nowrap flex-shrink-0"
       title={`Claude Code バージョン ${version}`}
     >
       <Icon name="terminal" className="size-3.5" />

@@ -86,9 +86,9 @@ const Header = memo<HeaderProps>(({
   claudeVersionError,
 }) => {
   return (
-    <header className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold flex items-center gap-2">
+    <header className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 min-w-0">
+      <div className="flex items-center gap-4 flex-shrink-0">
+        <h1 className="text-lg font-semibold flex items-center gap-2 whitespace-nowrap">
           CCSD
           {/* Claude Code Invader Icon */}
           <svg
@@ -125,7 +125,7 @@ const Header = memo<HeaderProps>(({
         />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 flex-shrink-0">
         <ClaudeVersionBadge
           version={claudeVersion ?? null}
           loading={claudeVersionLoading}

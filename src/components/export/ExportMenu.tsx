@@ -129,7 +129,7 @@ const ExportMenu: FC<ExportMenuProps> = ({ selectedFilePath, selectedFileName })
         aria-haspopup="menu"
         aria-controls="export-menu"
         aria-label={exporting ? 'エクスポート中' : 'エクスポートメニューを開く'}
-        className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+        className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap flex-shrink-0"
         title="エクスポート"
       >
         {exporting ? (

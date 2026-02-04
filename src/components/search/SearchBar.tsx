@@ -36,7 +36,7 @@ const SearchBar: FC<SearchBarProps> = ({
   }, [searchResults])
 
   return (
-    <div className="relative" ref={searchRef} role="search">
+    <div className="relative flex-shrink-0" ref={searchRef} role="search">
       <label htmlFor="search-input" className="sr-only">
         ファイル検索
       </label>

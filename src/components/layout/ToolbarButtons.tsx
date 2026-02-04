@@ -55,7 +55,7 @@ interface ToolbarButtonsProps {
 
 /** ボタンスタイルの定義 */
 const buttonStyles = {
-  primary: 'px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2',
+  primary: 'px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0',
   green: 'bg-green-500 text-white hover:bg-green-600',
   gray: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600',
   indigo: 'bg-indigo-500 text-white hover:bg-indigo-600',
@@ -68,8 +68,8 @@ const buttonStyles = {
     active: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200',
     inactive: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200',
   },
-  icon: 'p-1.5 rounded-md transition-colors',
-  iconHover: 'p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+  icon: 'p-1.5 rounded-md transition-colors flex-shrink-0',
+  iconHover: 'p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0',
 } as const
 
 const ToolbarButtons: FC<ToolbarButtonsProps> = memo(({
