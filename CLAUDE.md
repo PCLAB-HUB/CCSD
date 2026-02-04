@@ -10,9 +10,10 @@ Tauri v2 + React 19 + TypeScript + TailwindCSS v4 + Monaco Editor
 src/                    # フロントエンド (React)
 ├── App.tsx             # ルートコンポーネント、状態管理の統合
 ├── components/
-│   ├── layout/         # Header, MainArea, Sidebar, StatusBar
+│   ├── layout/         # Header, MainArea, Sidebar, StatusBar, ClaudeVersionBadge
 │   ├── editor/         # Monaco Editor関連
 │   ├── graph/          # 依存関係グラフ可視化
+│   ├── github/         # GitHubリポジトリパネル
 │   ├── search/         # 検索＆置換パネル
 │   ├── tabs/           # タブエディタUI
 │   ├── tree/           # ファイルツリー
@@ -33,6 +34,7 @@ src-tauri/              # バックエンド (Rust)
 │   │   ├── files.rs    # ファイル操作
 │   │   ├── backup.rs   # バックアップ
 │   │   ├── favorites.rs # お気に入り
+│   │   ├── version.rs  # Claude Codeバージョン取得
 │   │   └── ...
 │   ├── types.rs        # 型定義
 │   └── error.rs        # エラー型
@@ -66,6 +68,17 @@ src-tauri/              # バックエンド (Rust)
 - **「ウェブで翻訳」ボタン**: 翻訳しきれない英文をGoogle翻訳で確認
   - 英語が残っている場合のみ表示
   - tauri-plugin-openerでブラウザを起動
+
+### Claude Code情報表示
+- **バージョン表示**: Headerの検索バー左にClaude Codeバージョンをバッジ表示
+  - Rust側で`claude --version`コマンドを実行
+  - `src-tauri/src/commands/version.rs`
+  - `useClaudeVersion`フックで取得
+- **GitHub人気リポジトリ**: Header直下に折りたたみパネル
+  - GitHub Search APIでclaude+code関連リポジトリ上位10件を表示
+  - sessionStorageでキャッシュ（30分有効）
+  - `useGitHubRepos`フックで取得
+  - `GitHubReposPanel`コンポーネント
 
 ## 重要な設計パターン
 
@@ -106,27 +119,28 @@ npx tsc --noEmit     # TypeScriptチェック
 ## 現在の作業状態
 **最終更新: 2026-02-04**
 
-### 前回セッションで完了した作業
-1. **「ウェブで翻訳」ボタン追加** (1642f4d)
-   - パターン翻訳で完全に日本語化できなかった場合のみ表示
-   - クリックでGoogle翻訳をブラウザで開く
-   - tauri-plugin-openerを導入
+### 今回セッションで完了した作業
+1. **Claude Codeバージョン表示** (d3440ad)
+   - Headerの検索バー左にバージョンバッジを表示
+   - Rust側で`claude --version`を実行してバージョン取得
+   - `ClaudeVersionBadge`コンポーネント追加
 
-2. **詳細パネルのリサイズ機能** (8e33b98)
-   - NodeDetailPanelをドラッグでリサイズ可能
-   - 最小200px〜最大500px、localStorageで永続化
+2. **GitHub人気リポジトリパネル** (d3440ad)
+   - Header直下に折りたたみパネルを配置
+   - GitHub Search APIでclaude+code関連リポジトリ上位10件を表示
+   - sessionStorageでキャッシュ（30分有効、レート制限対策）
+   - `GitHubReposPanel`コンポーネント追加
 
-3. **発動条件の日本語翻訳** (6e5bcab)
-   - `translationPatterns.ts`: パターンマッチ翻訳辞書
-
-4. **ドキュメント更新** (15e3c1e)
-   - README.mdを現在の仕様に全面更新
-   - CLAUDE.mdを更新
+3. **サブエージェント並列実行**
+   - rust-engineer: Tauriコマンド実装
+   - typescript-pro x2: フック・型定義実装
+   - react-specialist: UIコンポーネント実装
 
 ### 直近コミット
-- docs: README.mdを現在の仕様に合わせて全面更新 (15e3c1e)
-- docs: CLAUDE.md更新 (231f306)
-- feat: 翻訳しきれない英文用の「ウェブで翻訳」ボタンを追加 (1642f4d)
+- feat: Claude CodeバージョンとGitHubリポジトリ表示機能を統合 (d3440ad)
+- feat: Claude Code情報表示UIコンポーネントを追加 (d09afe2)
+- feat: GitHub API統合とuseGitHubReposフック追加 (77e08b1)
+- feat: Claude Codeバージョン取得フロントエンドフックを追加 (50725e9)
 
 ### 次のタスク候補
 - **Git自動化コマンドの実装**（計画作成済み、保留中）
@@ -136,8 +150,8 @@ npx tsc --noEmit     # TypeScriptチェック
 - 翻訳パターンの追加（必要に応じて）
 
 ### 開発環境の状態
-- 開発サーバー: ポート1420で起動中の可能性あり
-- Git: mainブランチ、リモートと同期済み
+- 開発サーバー: ポート1420で起動中
+- Git: mainブランチ、7コミットpush待ち
 
 ## 既知の問題・TODO
 - プレビュー専用ウィンドウ（延期中）
