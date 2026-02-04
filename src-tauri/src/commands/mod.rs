@@ -9,6 +9,7 @@ pub mod files;
 pub mod import;
 pub mod stats;
 pub mod template;
+pub mod terminal;
 pub mod version;
 pub mod window;
 
@@ -20,5 +21,6 @@ pub use files::*;
 pub use import::*;
 pub use stats::*;
 pub use template::*;
+pub use terminal::*;
 pub use version::*;
 pub use window::*;

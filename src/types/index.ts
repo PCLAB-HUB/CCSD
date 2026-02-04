@@ -270,3 +270,39 @@ export {
   LANGUAGE_COLORS,
   getLanguageColor,
 } from './github'
+
+// ターミナル関連
+export type {
+  TerminalStatus,
+  TerminalConfig,
+  QuickCommandId,
+  QuickCommand,
+  CreateQuickCommandInput,
+  CommandHistoryItem,
+  CommandHistoryState,
+  TerminalTabType,
+  TerminalPanelState,
+  TerminalOutputItem,
+  TerminalState,
+  TerminalActions,
+  UseTerminalReturn,
+  TerminalStorageKey,
+} from './terminal'
+export {
+  DEFAULT_QUICK_COMMANDS,
+  DEFAULT_TERMINAL_CONFIG,
+  DEFAULT_PANEL_HEIGHT,
+  MIN_PANEL_HEIGHT,
+  MAX_PANEL_HEIGHT,
+  MAX_COMMAND_HISTORY,
+  TERMINAL_STORAGE_KEYS,
+  createQuickCommandId,
+  createCommandHistoryId,
+  createOutputItemId,
+  createDefaultPanelState,
+  createDefaultHistoryState,
+  clampPanelHeight,
+  limitCommandHistory,
+  isBuiltInCommand,
+  getCustomCommands,
+} from './terminal'

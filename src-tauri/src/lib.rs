@@ -64,6 +64,12 @@ use commands::{
     get_stats_detail,
     // version
     get_claude_version,
+    // terminal
+    close_terminal,
+    get_terminal_session_count,
+    resize_terminal,
+    spawn_terminal,
+    write_terminal,
 };
 
 /// アプリケーションのエントリーポイント
@@ -118,6 +124,12 @@ pub fn run() {
             get_stats_detail,
             // バージョン
             get_claude_version,
+            // ターミナル
+            spawn_terminal,
+            write_terminal,
+            resize_terminal,
+            close_terminal,
+            get_terminal_session_count,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

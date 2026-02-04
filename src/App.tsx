@@ -21,6 +21,10 @@ import {
 import { useClaudeVersion } from './hooks/useClaudeVersion'
 import { useGitHubRepos } from './hooks/useGitHubRepos'
 import { useTreeFilter } from './hooks/useTreeFilter'
+import { useTerminal } from './hooks/useTerminal'
+import { useTerminalPanel } from './hooks/useTerminalPanel'
+import { useQuickCommands } from './hooks/useQuickCommands'
+import { useTerminalHistory } from './hooks/useTerminalHistory'
 import { isMarkdownFile } from './utils/markdownParser'
 import { STORAGE_KEY_STATS_COLLAPSED } from './constants'
 
@@ -29,6 +33,7 @@ import Header from './components/layout/Header'
 import MainArea from './components/layout/MainArea'
 import Sidebar from './components/layout/Sidebar'
 import { StatsPanel } from './components/stats'
+import { TerminalPanel } from './components/terminal'
 
 // 遅延読み込み - モーダルコンポーネントは初期表示に不要
 const AIReviewPanel = lazy(() => import('./components/aiReview/AIReviewPanel'))
@@ -275,6 +280,51 @@ function App() {
     activeFilterCount,
   } = useTreeFilter()
 
+  // ターミナルパネル状態管理
+  const {
+    isOpen: isTerminalOpen,
+    height: terminalHeight,
+    activeTab: terminalActiveTab,
+    toggle: toggleTerminal,
+    setHeight: setTerminalHeight,
+    setActiveTab: setTerminalActiveTab,
+  } = useTerminalPanel()
+
+  // ターミナルViewへの参照
+  const terminalViewRef = useRef<{ write: (data: string) => void; clear: () => void } | null>(null)
+
+  // ターミナルPTY接続
+  const {
+    status: terminalStatus,
+    spawnTerminal,
+    writeToTerminal,
+    resizeTerminal,
+    // closeTerminal, // 将来の機能用
+    clearOutput: clearTerminalOutput,
+    handleXtermData,
+  } = useTerminal({
+    onOutput: (data) => {
+      terminalViewRef.current?.write(data)
+    },
+    onError: (message) => {
+      showError(`ターミナルエラー: ${message}`)
+    },
+  })
+
+  // クイックコマンド管理
+  const {
+    commands: quickCommands,
+    addCommand: addQuickCommand,
+    removeCommand: removeQuickCommand,
+    // updateCommand: updateQuickCommand, // 将来の機能用
+  } = useQuickCommands()
+
+  // コマンド履歴管理
+  const {
+    items: commandHistory,
+    addCommand: addCommandToHistory,
+  } = useTerminalHistory()
+
   // ========================================
   // 派生状態（フィルタリング）
   // ========================================
@@ -451,6 +501,65 @@ function App() {
   }, [])
 
   // ========================================
+  // ターミナル関連ハンドラ
+  // ========================================
+
+  /**
+   * ターミナルでコマンドを実行
+   */
+  const handleExecuteTerminalCommand = useCallback(async (command: string) => {
+    // ターミナルが起動していなければ起動
+    if (terminalStatus === 'idle') {
+      const spawned = await spawnTerminal()
+      if (!spawned) return
+      // 少し待ってからコマンド送信
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    // コマンドを送信（改行を付加）
+    await writeToTerminal(command + '\n')
+    addCommandToHistory(command)
+  }, [terminalStatus, spawnTerminal, writeToTerminal, addCommandToHistory])
+
+  /**
+   * ターミナルからのデータ入力
+   */
+  const handleTerminalData = useCallback(async (data: string) => {
+    // ターミナルが起動していなければ起動
+    if (terminalStatus === 'idle') {
+      const spawned = await spawnTerminal()
+      if (!spawned) return
+    }
+    handleXtermData(data)
+  }, [terminalStatus, spawnTerminal, handleXtermData])
+
+  /**
+   * ターミナルリサイズ
+   */
+  const handleTerminalResize = useCallback((cols: number, rows: number) => {
+    void resizeTerminal(rows, cols)
+  }, [resizeTerminal])
+
+  /**
+   * ターミナルクリア
+   */
+  const handleTerminalClear = useCallback(() => {
+    terminalViewRef.current?.clear()
+    clearTerminalOutput()
+  }, [clearTerminalOutput])
+
+  /**
+   * クイックコマンド追加（簡易版）
+   */
+  const handleAddQuickCommand = useCallback(() => {
+    const label = prompt('コマンドラベル:')
+    if (!label) return
+    const command = prompt('実行コマンド:')
+    if (!command) return
+    addQuickCommand({ label, command })
+  }, [addQuickCommand])
+
+  // ========================================
   // 派生状態
   // ========================================
 
@@ -526,95 +635,121 @@ function App() {
         />
       )}
 
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          width={sidebarWidth}
-          onWidthChange={setSidebarWidth}
-          fileTree={filteredFileTree}
-          onFileSelect={handleFileSelect}
-          selectedPath={selectedFile?.path}
-          loading={loading}
-          error={fileTreeError}
-          onRetry={loadFileTree}
-          favorites={favorites}
-          onFavoriteSelect={handleFileSelect}
-          onFavoriteRemove={(path) => { void removeFavorite(path) }}
-          onFavoritesReorder={(startIndex, endIndex) => { void reorderFavorites(startIndex, endIndex) }}
-          isFavorite={isFavorite}
-          onToggleFavorite={(path, name) => { void toggleFavorite(path, name) }}
-          activeFilters={activeFilters}
-          showHiddenFiles={showHiddenFiles}
-          searchFilter={searchFilter}
-          isFilterMenuOpen={isFilterMenuOpen}
-          activeFilterCount={activeFilterCount}
-          onToggleFilter={toggleFilter}
-          onClearFilters={clearFilters}
-          onSearchFilterChange={setSearchFilter}
-          onToggleHiddenFiles={toggleHiddenFiles}
-          onToggleFilterMenu={toggleFilterMenu}
-          onCloseFilterMenu={closeFilterMenu}
-        />
-        <MainArea
-          selectedFile={selectedFile}
-          onContentChange={handleContentChange}
-          readOnly={readOnly}
-          darkMode={darkMode}
-          searchHighlight={searchHighlight}
-          onSearchCountUpdate={updateHighlightCount}
-          onSearchNavigate={navigateHighlight}
-          validationErrors={validationErrors}
-          onValidationChange={updateValidationErrors}
-          showPreview={showPreview}
-          scrollSync={scrollSync}
-          onPreviewChanges={handlePreviewChanges}
-          hasUnsavedChanges={hasUnsavedChanges}
-          onCompareWithBackup={compareWithBackup}
-          tabs={tabs}
-          activeTabId={activeTabId ?? undefined}
-          onSelectTab={handleSelectTab}
-          onCloseTab={closeTab}
-          onReorderTabs={reorderTabs}
-          linterEnabled={linterConfig.enabledCategories.length > 0}
-          linterResult={linterResult ? {
-            messages: linterResult.issues.map((issue, index) => ({
-              id: `lint-${index}`,
-              severity: issue.severity,
-              message: issue.message,
-              line: issue.line,
-              column: issue.column,
-              source: issue.ruleId,
-              fix: issue.suggestion ? {
-                description: issue.suggestion,
-                replacement: '',
-              } : undefined,
-            })),
-            enabled: linterConfig.enabledCategories.length > 0,
-          } : undefined}
-          onToggleLinter={(enabled) => {
-            if (enabled) {
-              updateLinterConfig({ enabledCategories: ['skill', 'agent', 'common'] })
-            } else {
-              updateLinterConfig({ enabledCategories: [] })
-            }
-          }}
-          isSearchReplacePanelOpen={isSearchReplacePanelOpen}
-          onCloseSearchReplace={closeSearchReplacePanel}
-          replaceSearchQuery={replaceSearchQuery}
-          replaceText={replaceText}
-          replaceMatches={replaceMatches}
-          replaceCurrentIndex={replaceCurrentIndex}
-          replaceOptions={replaceOptions}
-          isReplacing={isReplacing}
-          onReplaceSearchChange={setReplaceSearchQuery}
-          onReplaceTextChange={setReplaceText}
-          onReplaceOptionsChange={setReplaceOptions}
-          onReplaceFindNext={replaceFindNext}
-          onReplaceFindPrev={replaceFindPrev}
-          onReplaceCurrent={handleReplaceCurrent}
-          onReplaceAll={handleReplaceAll}
-          showDependencyGraph={showDependencyGraph}
-          onOpenFileFromGraph={handleOpenFileFromGraph}
-        />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            width={sidebarWidth}
+            onWidthChange={setSidebarWidth}
+            fileTree={filteredFileTree}
+            onFileSelect={handleFileSelect}
+            selectedPath={selectedFile?.path}
+            loading={loading}
+            error={fileTreeError}
+            onRetry={loadFileTree}
+            favorites={favorites}
+            onFavoriteSelect={handleFileSelect}
+            onFavoriteRemove={(path) => { void removeFavorite(path) }}
+            onFavoritesReorder={(startIndex, endIndex) => { void reorderFavorites(startIndex, endIndex) }}
+            isFavorite={isFavorite}
+            onToggleFavorite={(path, name) => { void toggleFavorite(path, name) }}
+            activeFilters={activeFilters}
+            showHiddenFiles={showHiddenFiles}
+            searchFilter={searchFilter}
+            isFilterMenuOpen={isFilterMenuOpen}
+            activeFilterCount={activeFilterCount}
+            onToggleFilter={toggleFilter}
+            onClearFilters={clearFilters}
+            onSearchFilterChange={setSearchFilter}
+            onToggleHiddenFiles={toggleHiddenFiles}
+            onToggleFilterMenu={toggleFilterMenu}
+            onCloseFilterMenu={closeFilterMenu}
+          />
+          <MainArea
+            selectedFile={selectedFile}
+            onContentChange={handleContentChange}
+            readOnly={readOnly}
+            darkMode={darkMode}
+            searchHighlight={searchHighlight}
+            onSearchCountUpdate={updateHighlightCount}
+            onSearchNavigate={navigateHighlight}
+            validationErrors={validationErrors}
+            onValidationChange={updateValidationErrors}
+            showPreview={showPreview}
+            scrollSync={scrollSync}
+            onPreviewChanges={handlePreviewChanges}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onCompareWithBackup={compareWithBackup}
+            tabs={tabs}
+            activeTabId={activeTabId ?? undefined}
+            onSelectTab={handleSelectTab}
+            onCloseTab={closeTab}
+            onReorderTabs={reorderTabs}
+            linterEnabled={linterConfig.enabledCategories.length > 0}
+            linterResult={linterResult ? {
+              messages: linterResult.issues.map((issue, index) => ({
+                id: `lint-${index}`,
+                severity: issue.severity,
+                message: issue.message,
+                line: issue.line,
+                column: issue.column,
+                source: issue.ruleId,
+                fix: issue.suggestion ? {
+                  description: issue.suggestion,
+                  replacement: '',
+                } : undefined,
+              })),
+              enabled: linterConfig.enabledCategories.length > 0,
+            } : undefined}
+            onToggleLinter={(enabled) => {
+              if (enabled) {
+                updateLinterConfig({ enabledCategories: ['skill', 'agent', 'common'] })
+              } else {
+                updateLinterConfig({ enabledCategories: [] })
+              }
+            }}
+            isSearchReplacePanelOpen={isSearchReplacePanelOpen}
+            onCloseSearchReplace={closeSearchReplacePanel}
+            replaceSearchQuery={replaceSearchQuery}
+            replaceText={replaceText}
+            replaceMatches={replaceMatches}
+            replaceCurrentIndex={replaceCurrentIndex}
+            replaceOptions={replaceOptions}
+            isReplacing={isReplacing}
+            onReplaceSearchChange={setReplaceSearchQuery}
+            onReplaceTextChange={setReplaceText}
+            onReplaceOptionsChange={setReplaceOptions}
+            onReplaceFindNext={replaceFindNext}
+            onReplaceFindPrev={replaceFindPrev}
+            onReplaceCurrent={handleReplaceCurrent}
+            onReplaceAll={handleReplaceAll}
+            showDependencyGraph={showDependencyGraph}
+            onOpenFileFromGraph={handleOpenFileFromGraph}
+          />
+        </div>
+
+        {/* ターミナルパネル（中央揃え） */}
+        <div className="flex justify-center">
+          <div className="w-full max-w-[900px]">
+            <TerminalPanel
+              isOpen={isTerminalOpen}
+              onToggle={toggleTerminal}
+              activeTab={terminalActiveTab}
+              onTabChange={setTerminalActiveTab}
+              height={terminalHeight}
+              onHeightChange={setTerminalHeight}
+              status={terminalStatus}
+              quickCommands={quickCommands}
+              commandHistory={commandHistory}
+              currentFilePath={selectedFile?.path}
+              onExecuteCommand={handleExecuteTerminalCommand}
+              onAddQuickCommand={handleAddQuickCommand}
+              onRemoveQuickCommand={removeQuickCommand}
+              onClear={handleTerminalClear}
+              onTerminalData={handleTerminalData}
+              onTerminalResize={handleTerminalResize}
+            />
+          </div>
+        </div>
       </div>
 
       <Suspense fallback={modalFallback}>
