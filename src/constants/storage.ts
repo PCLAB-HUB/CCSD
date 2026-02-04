@@ -14,3 +14,6 @@ export const STORAGE_KEY_API_KEY = 'claude-dashboard-api-key'
 
 /** ツリーフィルター状態保存キー */
 export const STORAGE_KEY_TREE_FILTER = 'claude-dashboard-tree-filter'
+
+/** GitHubリポジトリキャッシュ保存キー（sessionStorage） */
+export const STORAGE_KEY_GITHUB_REPOS = 'github_claude_repos'

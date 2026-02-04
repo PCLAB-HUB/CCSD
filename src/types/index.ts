@@ -247,3 +247,24 @@ export {
   getActiveFilterCount,
   resetFilterState,
 } from './treeFilter'
+
+// GitHub API関連
+export type {
+  GitHubOwner,
+  GitHubRepository,
+  GitHubSearchResponse,
+  GitHubReposState,
+  UseGitHubReposReturn,
+  GitHubCacheData,
+  GitHubErrorType,
+  GitHubError,
+} from './github'
+export {
+  GITHUB_CACHE_DURATION_MS,
+  GITHUB_SEARCH_API_URL,
+  GITHUB_DEFAULT_SEARCH_QUERY,
+  GITHUB_RESULTS_PER_PAGE,
+  isCacheValid,
+  translateGitHubError,
+  formatStarCount,
+} from './github'
