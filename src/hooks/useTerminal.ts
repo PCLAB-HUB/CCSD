@@ -31,7 +31,9 @@ import { createOutputItemId } from '../types/terminal'
  * ターミナル出力イベントのペイロード
  */
 interface TerminalOutputPayload {
-  /** 出力データ（バイト配列をBase64エンコード、または文字列） */
+  /** セッションID */
+  session_id: string
+  /** 出力データ */
   data: string
 }
 
@@ -39,6 +41,8 @@ interface TerminalOutputPayload {
  * ターミナル終了イベントのペイロード
  */
 interface TerminalExitPayload {
+  /** セッションID */
+  session_id: string
   /** 終了コード */
   code: number
 }
@@ -47,8 +51,10 @@ interface TerminalExitPayload {
  * ターミナルエラーイベントのペイロード
  */
 interface TerminalErrorPayload {
+  /** セッションID */
+  session_id: string
   /** エラーメッセージ */
-  message: string
+  error: string
 }
 
 /**
@@ -75,6 +81,8 @@ export interface UseTerminalReturn {
   handleXtermData: (data: string) => void
   /** ターミナルがアクティブかどうか */
   isActive: boolean
+  /** 現在のセッションID */
+  sessionId: string | null
 }
 
 // ============================================================
@@ -92,22 +100,6 @@ const DEFAULT_CONFIG: TerminalConfig = {
 
 /**
  * ターミナルPTY接続・入出力管理フック
- *
- * @param onOutput - 出力受信時のコールバック（xterm.jsへの書き込み用）
- * @returns ターミナル操作関数と状態
- *
- * @example
- * ```tsx
- * const { spawnTerminal, writeToTerminal, status, handleXtermData } = useTerminal({
- *   onOutput: (data) => xtermRef.current?.write(data),
- * })
- *
- * // ターミナル起動
- * await spawnTerminal({ rows: 30, cols: 100 })
- *
- * // xterm.jsのonDataに接続
- * xtermRef.current?.onData(handleXtermData)
- * ```
  */
 export function useTerminal(options?: {
   /** 出力受信時のコールバック */
@@ -122,6 +114,7 @@ export function useTerminal(options?: {
   const [status, setStatus] = useState<TerminalStatus>('idle')
   const [output, setOutput] = useState<TerminalOutputItem[]>([])
   const [lastError, setLastError] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   // マウント状態を追跡
   const isMountedRef = useRef(true)
@@ -129,6 +122,8 @@ export function useTerminal(options?: {
   const unlistenFunctionsRef = useRef<UnlistenFn[]>([])
   // ターミナルがアクティブかどうか
   const isActiveRef = useRef(false)
+  // 現在のセッションID
+  const sessionIdRef = useRef<string | null>(null)
 
   // クリーンアップ
   useEffect(() => {
@@ -171,6 +166,9 @@ export function useTerminal(options?: {
         'terminal:output',
         (event) => {
           if (!isMountedRef.current) return
+          // 自分のセッションの出力のみ処理
+          if (event.payload.session_id !== sessionIdRef.current) return
+
           const { data } = event.payload
           addOutput('stdout', data)
           onOutput?.(data)
@@ -183,9 +181,13 @@ export function useTerminal(options?: {
         'terminal:exit',
         (event) => {
           if (!isMountedRef.current) return
+          if (event.payload.session_id !== sessionIdRef.current) return
+
           const { code } = event.payload
           isActiveRef.current = false
+          sessionIdRef.current = null
           setStatus('idle')
+          setSessionId(null)
           addOutput('system', `\r\n[プロセス終了: コード ${code}]`)
           onExit?.(code)
         }
@@ -197,11 +199,13 @@ export function useTerminal(options?: {
         'terminal:error',
         (event) => {
           if (!isMountedRef.current) return
-          const { message } = event.payload
+          if (event.payload.session_id !== sessionIdRef.current) return
+
+          const { error } = event.payload
           setStatus('error')
-          setLastError(message)
-          addOutput('stderr', `\r\n[エラー: ${message}]`)
-          onError?.(message)
+          setLastError(error)
+          addOutput('stderr', `\r\n[エラー: ${error}]`)
+          onError?.(error)
         }
       )
       unlistenFunctionsRef.current.push(unlistenError)
@@ -242,14 +246,16 @@ export function useTerminal(options?: {
         // イベントリスナーを先に設定
         await setupEventListeners()
 
-        // ターミナルを起動
-        await invoke('spawn_terminal', {
+        // ターミナルを起動（セッションIDが返される）
+        const newSessionId = await invoke<string>('spawn_terminal', {
           rows: mergedConfig.rows,
           cols: mergedConfig.cols,
-          cwd: mergedConfig.cwd,
+          workingDir: mergedConfig.cwd,
         })
 
         if (isMountedRef.current) {
+          sessionIdRef.current = newSessionId
+          setSessionId(newSessionId)
           isActiveRef.current = true
           setStatus('running')
           setLastError(null)
@@ -281,13 +287,16 @@ export function useTerminal(options?: {
    */
   const writeToTerminal = useCallback(async (data: string): Promise<boolean> => {
     if (!isTauri()) return false
-    if (!isActiveRef.current) {
+    if (!isActiveRef.current || !sessionIdRef.current) {
       console.warn('Terminal is not active')
       return false
     }
 
     try {
-      await invoke('write_to_terminal', { data })
+      await invoke('write_terminal', {
+        sessionId: sessionIdRef.current,
+        data
+      })
       return true
     } catch (error) {
       console.error('Failed to write to terminal:', error)
@@ -301,10 +310,14 @@ export function useTerminal(options?: {
   const resizeTerminal = useCallback(
     async (rows: number, cols: number): Promise<boolean> => {
       if (!isTauri()) return false
-      if (!isActiveRef.current) return false
+      if (!isActiveRef.current || !sessionIdRef.current) return false
 
       try {
-        await invoke('resize_terminal', { rows, cols })
+        await invoke('resize_terminal', {
+          sessionId: sessionIdRef.current,
+          rows,
+          cols
+        })
         return true
       } catch (error) {
         console.error('Failed to resize terminal:', error)
@@ -319,14 +332,16 @@ export function useTerminal(options?: {
    */
   const closeTerminal = useCallback(async (): Promise<boolean> => {
     if (!isTauri()) return false
-    if (!isActiveRef.current) return true // 既に終了している
+    if (!isActiveRef.current || !sessionIdRef.current) return true // 既に終了している
 
     try {
-      await invoke('close_terminal')
+      await invoke('close_terminal', { sessionId: sessionIdRef.current })
       cleanupEventListeners()
 
       if (isMountedRef.current) {
         isActiveRef.current = false
+        sessionIdRef.current = null
+        setSessionId(null)
         setStatus('idle')
         addOutput('system', '\r\n[ターミナルを終了しました]')
       }
@@ -360,8 +375,8 @@ export function useTerminal(options?: {
   // コンポーネントのアンマウント時にターミナルを終了
   useEffect(() => {
     return () => {
-      if (isActiveRef.current) {
-        void invoke('close_terminal').catch(() => {
+      if (isActiveRef.current && sessionIdRef.current) {
+        void invoke('close_terminal', { sessionId: sessionIdRef.current }).catch(() => {
           // アンマウント時のエラーは無視
         })
       }
@@ -379,6 +394,7 @@ export function useTerminal(options?: {
     clearOutput,
     handleXtermData,
     isActive: isActiveRef.current,
+    sessionId,
   }
 }
 
