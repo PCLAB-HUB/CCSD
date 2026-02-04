@@ -635,35 +635,38 @@ function App() {
         />
       )}
 
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar
-            width={sidebarWidth}
-            onWidthChange={setSidebarWidth}
-            fileTree={filteredFileTree}
-            onFileSelect={handleFileSelect}
-            selectedPath={selectedFile?.path}
-            loading={loading}
-            error={fileTreeError}
-            onRetry={loadFileTree}
-            favorites={favorites}
-            onFavoriteSelect={handleFileSelect}
-            onFavoriteRemove={(path) => { void removeFavorite(path) }}
-            onFavoritesReorder={(startIndex, endIndex) => { void reorderFavorites(startIndex, endIndex) }}
-            isFavorite={isFavorite}
-            onToggleFavorite={(path, name) => { void toggleFavorite(path, name) }}
-            activeFilters={activeFilters}
-            showHiddenFiles={showHiddenFiles}
-            searchFilter={searchFilter}
-            isFilterMenuOpen={isFilterMenuOpen}
-            activeFilterCount={activeFilterCount}
-            onToggleFilter={toggleFilter}
-            onClearFilters={clearFilters}
-            onSearchFilterChange={setSearchFilter}
-            onToggleHiddenFiles={toggleHiddenFiles}
-            onToggleFilterMenu={toggleFilterMenu}
-            onCloseFilterMenu={closeFilterMenu}
-          />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - 画面下まで伸びる */}
+        <Sidebar
+          width={sidebarWidth}
+          onWidthChange={setSidebarWidth}
+          fileTree={filteredFileTree}
+          onFileSelect={handleFileSelect}
+          selectedPath={selectedFile?.path}
+          loading={loading}
+          error={fileTreeError}
+          onRetry={loadFileTree}
+          favorites={favorites}
+          onFavoriteSelect={handleFileSelect}
+          onFavoriteRemove={(path) => { void removeFavorite(path) }}
+          onFavoritesReorder={(startIndex, endIndex) => { void reorderFavorites(startIndex, endIndex) }}
+          isFavorite={isFavorite}
+          onToggleFavorite={(path, name) => { void toggleFavorite(path, name) }}
+          activeFilters={activeFilters}
+          showHiddenFiles={showHiddenFiles}
+          searchFilter={searchFilter}
+          isFilterMenuOpen={isFilterMenuOpen}
+          activeFilterCount={activeFilterCount}
+          onToggleFilter={toggleFilter}
+          onClearFilters={clearFilters}
+          onSearchFilterChange={setSearchFilter}
+          onToggleHiddenFiles={toggleHiddenFiles}
+          onToggleFilterMenu={toggleFilterMenu}
+          onCloseFilterMenu={closeFilterMenu}
+        />
+
+        {/* メインエリア + ターミナル */}
+        <div className="flex flex-col flex-1 overflow-hidden">
           <MainArea
             selectedFile={selectedFile}
             onContentChange={handleContentChange}
@@ -725,30 +728,26 @@ function App() {
             showDependencyGraph={showDependencyGraph}
             onOpenFileFromGraph={handleOpenFileFromGraph}
           />
-        </div>
 
-        {/* ターミナルパネル（中央揃え） */}
-        <div className="flex justify-center">
-          <div className="w-full max-w-[900px]">
-            <TerminalPanel
-              isOpen={isTerminalOpen}
-              onToggle={toggleTerminal}
-              activeTab={terminalActiveTab}
-              onTabChange={setTerminalActiveTab}
-              height={terminalHeight}
-              onHeightChange={setTerminalHeight}
-              status={terminalStatus}
-              quickCommands={quickCommands}
-              commandHistory={commandHistory}
-              currentFilePath={selectedFile?.path}
-              onExecuteCommand={handleExecuteTerminalCommand}
-              onAddQuickCommand={handleAddQuickCommand}
-              onRemoveQuickCommand={removeQuickCommand}
-              onClear={handleTerminalClear}
-              onTerminalData={handleTerminalData}
-              onTerminalResize={handleTerminalResize}
-            />
-          </div>
+          {/* ターミナルパネル（MainAreaの下に配置） */}
+          <TerminalPanel
+            isOpen={isTerminalOpen}
+            onToggle={toggleTerminal}
+            activeTab={terminalActiveTab}
+            onTabChange={setTerminalActiveTab}
+            height={terminalHeight}
+            onHeightChange={setTerminalHeight}
+            status={terminalStatus}
+            quickCommands={quickCommands}
+            commandHistory={commandHistory}
+            currentFilePath={selectedFile?.path}
+            onExecuteCommand={handleExecuteTerminalCommand}
+            onAddQuickCommand={handleAddQuickCommand}
+            onRemoveQuickCommand={removeQuickCommand}
+            onClear={handleTerminalClear}
+            onTerminalData={handleTerminalData}
+            onTerminalResize={handleTerminalResize}
+          />
         </div>
       </div>
 
