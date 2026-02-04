@@ -93,20 +93,15 @@ npx tsc --noEmit     # TypeScriptチェック
 **最終更新: 2026-02-04**
 
 ### 今回のセッションで完了した作業
-**統計項目詳細リスト表示機能:**
-- 統計パネルの各項目（スキル、サブエージェント等）をクリックで詳細リスト表示
-- Rust: `get_stats_detail` コマンド追加（7種類の詳細取得）
-- TypeScript: StatsDetailItem, StatsDetailType, StatsDetail型追加
-- React: StatsDetailModal, StatsDetailListItem コンポーネント
-- Hook: useStatsDetail フック（Tauri API呼び出し）
-- 検索フィルター、アクセシビリティ対応
+**依存関係ツリー表示のバグ修正:**
+- 問題: 依存関係ボタンをクリックしてもスキル/エージェントが表示されなかった
+- 原因: ルートノード選定でCLAUDE.mdのみを選択、子ノードが空
+- 解決: CLAUDE.mdと参照されていないノードの両方をルートとして表示
+- 修正ファイル: `src/hooks/useDependencyGraph.ts`
 
 ### 直近コミット
-- chore: tsconfig.jsonからテストファイルを除外、.gitignore更新
-- feat: StatsPanelにStatsDetailModal統合を追加
-- feat: useStatsDetail フックを追加
-- feat: 統計詳細モーダルコンポーネントを追加
-- feat: 統計詳細表示用のTypeScript型定義を追加
+- fix: 依存関係ツリーでスキル/エージェントが表示されない問題を修正
+- docs: CLAUDE.mdを更新（統計詳細表示機能追加）
 
 ### 次のタスク候補
 - **Git自動化コマンドの実装**（計画作成済み、保留中）

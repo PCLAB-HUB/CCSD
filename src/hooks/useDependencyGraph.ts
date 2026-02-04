@@ -338,17 +338,20 @@ export function useDependencyGraph(): UseDependencyGraphReturn {
     const referencedNodeIds = new Set<string>(edges.map((edge) => edge.target))
 
     // ルートノードの特定
+    // CLAUDE.mdと、他のファイルから参照されていないノードの両方をルートとする
     const claudeMdNodes = nodes.filter((node) => node.type === 'claude-md')
     const unreferencedNodes = nodes.filter((node) => !referencedNodeIds.has(node.id))
 
-    let rootNodes: GraphNode[]
-    if (claudeMdNodes.length > 0) {
-      rootNodes = claudeMdNodes
-    } else if (unreferencedNodes.length > 0) {
-      rootNodes = unreferencedNodes
-    } else {
-      // すべてのノードが参照されている場合（循環のみ）、最初のノードをルートに
-      rootNodes = [nodes[0]]
+    // CLAUDE.mdを最初に、その後に参照されていないスキル/エージェントを追加
+    // 重複を避けるため、CLAUDE.md以外の参照されていないノードのみ追加
+    const rootNodes: GraphNode[] = [
+      ...claudeMdNodes,
+      ...unreferencedNodes.filter((node) => node.type !== 'claude-md'),
+    ]
+
+    // ルートノードがない場合のフォールバック
+    if (rootNodes.length === 0 && nodes.length > 0) {
+      rootNodes.push(nodes[0])
     }
 
     // ノードIDからGraphNodeへのマップ
