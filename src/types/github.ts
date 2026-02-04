@@ -181,3 +181,35 @@ export function formatStarCount(count: number): string {
   }
   return count.toString()
 }
+
+/**
+ * 言語のカラーマッピング
+ * GitHubで使用される色に準拠
+ */
+export const LANGUAGE_COLORS: Record<string, string> = {
+  TypeScript: '#3178c6',
+  JavaScript: '#f1e05a',
+  Python: '#3572A5',
+  Rust: '#dea584',
+  Go: '#00ADD8',
+  Java: '#b07219',
+  'C++': '#f34b7d',
+  C: '#555555',
+  'C#': '#178600',
+  Ruby: '#701516',
+  PHP: '#4F5D95',
+  Swift: '#F05138',
+  Kotlin: '#A97BFF',
+  Shell: '#89e051',
+  Markdown: '#083fa1',
+}
+
+/**
+ * 言語のカラーを取得
+ * @param language - プログラミング言語名
+ * @returns カラーコード
+ */
+export function getLanguageColor(language: string | null): string {
+  if (!language) return '#6b7280' // gray-500
+  return LANGUAGE_COLORS[language] || '#6b7280'
+}

@@ -267,4 +267,6 @@ export {
   isCacheValid,
   translateGitHubError,
   formatStarCount,
+  LANGUAGE_COLORS,
+  getLanguageColor,
 } from './github'
