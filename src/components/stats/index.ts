@@ -7,7 +7,11 @@
  * - StatsPanel: 折りたたみ可能なパネルコンテナ（セマンティックHTML、スキップリンク対応）
  * - StatCard: 個別の統計値を表示するカード（dl/dt/dd構造、キーボードフォーカス対応）
  * - StatsMetaInfo: システム情報表示（time要素、機械可読日時）
+ * - StatsDetailModal: 統計詳細表示モーダル（検索機能付き、フォーカストラップ対応）
+ * - StatsDetailListItem: 統計詳細リストアイテム（キーボード操作対応）
  */
 export { StatsPanel, type StatItem } from './StatsPanel'
 export { StatCard, type StatIconVariant } from './StatCard'
 export { StatsMetaInfo } from './StatsMetaInfo'
+export { StatsDetailModal } from './StatsDetailModal'
+export { StatsDetailListItem } from './StatsDetailListItem'
