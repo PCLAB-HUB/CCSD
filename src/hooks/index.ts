@@ -60,6 +60,7 @@ export { useSearchHighlight } from './useSearchHighlight'
 
 // 統計データ
 export { useStats } from './useStats'
+export { useStatsDetail } from './useStatsDetail'
 
 // お気に入り機能
 export { useFavorites } from './useFavorites'
