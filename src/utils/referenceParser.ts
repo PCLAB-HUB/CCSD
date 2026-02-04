@@ -175,6 +175,7 @@ export function matchesKnownFile(refName: string, knownFiles: string[]): string 
  * ファイルコンテンツからフロントマターの説明を抽出
  *
  * YAMLフロントマター内のdescriptionフィールドを取得
+ * frontmatterがない場合は、タイトルや最初の段落から抽出を試みる
  *
  * @param content - ファイルコンテンツ
  * @returns 説明文字列、または見つからなければnull
@@ -192,27 +193,57 @@ export function matchesKnownFile(refName: string, knownFiles: string[]): string 
 export function extractDescription(content: string): string | null {
   // フロントマターを検出
   const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/)
-  if (!frontmatterMatch) {
-    return null
+  if (frontmatterMatch) {
+    const frontmatter = frontmatterMatch[1]
+
+    // descriptionフィールドを抽出
+    const descriptionMatch = frontmatter.match(/^description:\s*["']?([^"'\n]+)["']?\s*$/m)
+    if (descriptionMatch) {
+      return descriptionMatch[1].trim()
+    }
+
+    // 複数行の説明（>や|で始まるYAML形式）
+    const multilineMatch = frontmatter.match(/^description:\s*[>|]\s*\n((?:\s{2,}[^\n]+\n?)+)/m)
+    if (multilineMatch) {
+      return multilineMatch[1]
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join(' ')
+        .trim()
+    }
   }
 
-  const frontmatter = frontmatterMatch[1]
-
-  // descriptionフィールドを抽出
-  const descriptionMatch = frontmatter.match(/^description:\s*["']?([^"'\n]+)["']?\s*$/m)
-  if (descriptionMatch) {
-    return descriptionMatch[1].trim()
+  // frontmatterがない場合：タイトル（# で始まる行）を抽出
+  const titleMatch = content.match(/^#\s+(.+)$/m)
+  if (titleMatch) {
+    return titleMatch[1].trim()
   }
 
-  // 複数行の説明（>や|で始まるYAML形式）
-  const multilineMatch = frontmatter.match(/^description:\s*[>|]\s*\n((?:\s{2,}[^\n]+\n?)+)/m)
-  if (multilineMatch) {
-    return multilineMatch[1]
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .join(' ')
-      .trim()
+  return null
+}
+
+/**
+ * ファイルコンテンツからタイトルを抽出（frontmatterのnameまたは#タイトル）
+ *
+ * @param content - ファイルコンテンツ
+ * @returns タイトル文字列、または見つからなければnull
+ */
+export function extractTitle(content: string): string | null {
+  // フロントマターからnameを抽出
+  const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/)
+  if (frontmatterMatch) {
+    const frontmatter = frontmatterMatch[1]
+    const nameMatch = frontmatter.match(/^name:\s*["']?([^"'\n]+)["']?\s*$/m)
+    if (nameMatch) {
+      return nameMatch[1].trim()
+    }
+  }
+
+  // # タイトル行を抽出
+  const titleMatch = content.match(/^#\s+(.+)$/m)
+  if (titleMatch) {
+    return titleMatch[1].trim()
   }
 
   return null
@@ -383,6 +414,7 @@ export function extractSkillName(content: string): string | null {
  * descriptionから発動条件を抽出
  *
  * "Use when...", "Use this agent when..." パターンを解析して発動条件を構造化
+ * frontmatterがない場合は、タイトルや本文から使用目的を抽出
  *
  * @param content - ファイルコンテンツ
  * @returns 発動条件の配列
@@ -390,43 +422,45 @@ export function extractSkillName(content: string): string | null {
 export function extractTriggers(content: string): TriggerInfo[] {
   const triggers: TriggerInfo[] = []
   const description = extractDescription(content)
+  const title = extractTitle(content)
 
-  if (!description) return triggers
+  // descriptionがある場合
+  if (description) {
+    // "Use this agent when..." パターン（エージェント向け）
+    const useAgentMatch = description.match(/use this (?:agent|tool)\s+when\s+(.+?)(?:\.|Examples:|$)/is)
+    if (useAgentMatch) {
+      const condition = useAgentMatch[1].trim()
+      triggers.push({ condition })
+    }
 
-  // "Use this agent when..." パターン（エージェント向け）
-  const useAgentMatch = description.match(/use this (?:agent|tool)\s+when\s+(.+?)(?:\.|Examples:|$)/is)
-  if (useAgentMatch) {
-    const condition = useAgentMatch[1].trim()
-    triggers.push({ condition })
-  }
-
-  // "Use when..." パターンを検出（"use this agent when"を除く）
-  if (!useAgentMatch) {
-    const useWhenMatch = description.match(/use when\s+(.+?)(?:\.|$)/i)
-    if (useWhenMatch) {
-      const condition = useWhenMatch[1].trim()
-      // カンマや "or" で分割して複数の条件を抽出
-      const conditions = condition.split(/,\s*(?:or\s+)?|(?:\s+or\s+)/i)
-      for (const cond of conditions) {
-        const trimmed = cond.trim()
-        if (trimmed) {
-          triggers.push({ condition: trimmed })
+    // "Use when..." パターンを検出（"use this agent when"を除く）
+    if (!useAgentMatch) {
+      const useWhenMatch = description.match(/use when\s+(.+?)(?:\.|$)/i)
+      if (useWhenMatch) {
+        const condition = useWhenMatch[1].trim()
+        // カンマや "or" で分割して複数の条件を抽出
+        const conditions = condition.split(/,\s*(?:or\s+)?|(?:\s+or\s+)/i)
+        for (const cond of conditions) {
+          const trimmed = cond.trim()
+          if (trimmed) {
+            triggers.push({ condition: trimmed })
+          }
         }
       }
     }
-  }
 
-  // "You MUST use this before..." パターン
-  const mustUseMatch = description.match(/you must use this (?:before|when)\s+(.+?)(?:\.|$)/i)
-  if (mustUseMatch) {
-    triggers.push({ condition: mustUseMatch[1].trim() })
-  }
+    // "You MUST use this before..." パターン
+    const mustUseMatch = description.match(/you must use this (?:before|when)\s+(.+?)(?:\.|$)/i)
+    if (mustUseMatch) {
+      triggers.push({ condition: mustUseMatch[1].trim() })
+    }
 
-  // 説明文がそのまま使用条件を表している場合（短い説明文）
-  if (triggers.length === 0 && description.length < 200) {
-    // 動詞で始まる説明文は使用条件として扱う
-    if (/^(simplif|refin|analyz|review|creat|generat|help|assist)/i.test(description)) {
-      triggers.push({ condition: description })
+    // 説明文がそのまま使用条件を表している場合（短い説明文）
+    if (triggers.length === 0 && description.length < 200) {
+      // 動詞で始まる説明文は使用条件として扱う
+      if (/^(simplif|refin|analyz|review|creat|generat|help|assist)/i.test(description)) {
+        triggers.push({ condition: description })
+      }
     }
   }
 
@@ -444,6 +478,22 @@ export function extractTriggers(content: string): TriggerInfo[] {
         }
       }
     }
+  }
+
+  // "## あなたのタスク" や "## タスク" セクションから目的を抽出（日本語対応）
+  const taskMatch = content.match(/##\s*(?:あなたの)?タスク\s*\n([\s\S]*?)(?=\n##|$)/i)
+  if (taskMatch && triggers.length === 0) {
+    const section = taskMatch[1]
+    // 最初の文を抽出
+    const firstSentence = section.match(/^([^。\n]+[。]?)/m)
+    if (firstSentence) {
+      triggers.push({ condition: firstSentence[1].trim() })
+    }
+  }
+
+  // frontmatterがなく、タイトルがある場合はタイトルを使用目的として追加
+  if (triggers.length === 0 && title && !content.match(/^---\s*\n/)) {
+    triggers.push({ condition: title })
   }
 
   return triggers
