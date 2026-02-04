@@ -74,3 +74,7 @@ export {
 
 // お気に入り操作
 export { loadFavorites, saveFavorites } from './favorites'
+
+// バージョン操作
+export { getClaudeVersion, getClaudeVersionWithResult } from './version'
+export type { VersionResult } from './version'
