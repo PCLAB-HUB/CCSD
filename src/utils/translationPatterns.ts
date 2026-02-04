@@ -313,3 +313,45 @@ export function translateIfNeeded(text: string): string {
   }
   return text
 }
+
+/**
+ * 翻訳後も英語の単語が残っているかチェック
+ *
+ * 翻訳結果に英単語（3文字以上のASCII文字列）が含まれていれば
+ * まだ翻訳しきれていないと判断
+ *
+ * @param text - チェックするテキスト
+ * @returns 英語が残っている場合true
+ */
+export function hasRemainingEnglish(text: string): boolean {
+  // 3文字以上の英単語パターン（全角文字の間にある英単語を検出）
+  const englishWordPattern = /\b[a-zA-Z]{3,}\b/g
+  const matches = text.match(englishWordPattern) || []
+
+  // 許可リスト: 技術用語など翻訳しなくていいもの
+  const allowedWords = new Set([
+    'API', 'URL', 'HTTP', 'HTTPS', 'JSON', 'XML', 'HTML', 'CSS',
+    'IDE', 'SDK', 'CLI', 'GUI', 'SQL', 'NoSQL', 'ORM',
+    'MCP', 'LLM', 'GPT', 'npm', 'git', 'SSH', 'FTP', 'DNS',
+  ])
+
+  // 許可リストにない英単語があれば「残っている」と判定
+  return matches.some(word => !allowedWords.has(word.toUpperCase()))
+}
+
+/**
+ * Google翻訳のURLを生成
+ *
+ * @param text - 翻訳するテキスト
+ * @param sourceLang - ソース言語（デフォルト: 英語）
+ * @param targetLang - ターゲット言語（デフォルト: 日本語）
+ * @returns Google翻訳のURL
+ */
+export function getGoogleTranslateUrl(
+  text: string,
+  sourceLang = 'en',
+  targetLang = 'ja'
+): string {
+  const encodedText = encodeURIComponent(text)
+  return `https://translate.google.com/?sl=${sourceLang}&tl=${targetLang}&text=${encodedText}&op=translate`
+}

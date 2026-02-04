@@ -22,6 +22,8 @@
     "fs:allow-read-dir",
     "dialog:default",
     "dialog:allow-open",
-    "dialog:allow-save"
+    "dialog:allow-save",
+    "opener:default",
+    "opener:allow-open-url"
   ]
 }

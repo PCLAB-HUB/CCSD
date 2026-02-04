@@ -1,7 +1,12 @@
-import { memo } from 'react'
+import { memo, useMemo, useCallback } from 'react'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
 import { Icon } from '../common'
-import { translateIfNeeded } from '../../utils/translationPatterns'
+import {
+  translateIfNeeded,
+  hasRemainingEnglish,
+  getGoogleTranslateUrl,
+} from '../../utils/translationPatterns'
 
 import type { NodeDetail, GraphNode, TreeNode, NodeType, SkillMetadata } from '../../types/graph'
 import { NODE_TYPE_LABELS, NODE_TYPE_BADGE_STYLES, BADGE_BASE_STYLE } from '../../constants/graph'
@@ -70,20 +75,66 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean; 
     // ノードタイプに応じたラベル
     const typeLabel = nodeType === 'subagent' ? 'エージェント' : 'スキル'
 
+    // 発動条件に翻訳しきれていない英語があるかチェック
+    const translatedTriggers = useMemo(() =>
+      metadata.triggers.map(trigger => ({
+        original: trigger.condition,
+        translated: translateIfNeeded(trigger.condition),
+      })),
+      [metadata.triggers]
+    )
+
+    const hasUntranslatedTriggers = useMemo(() =>
+      translatedTriggers.some(t => hasRemainingEnglish(t.translated)),
+      [translatedTriggers]
+    )
+
+    // 元の英文をすべて結合してGoogle翻訳用のテキストを作成
+    const originalTriggersText = useMemo(() =>
+      metadata.triggers.map(t => t.condition).join('\n\n'),
+      [metadata.triggers]
+    )
+
+    // ウェブで翻訳ボタンのクリックハンドラ
+    const handleOpenTranslation = useCallback(() => {
+      const url = getGoogleTranslateUrl(originalTriggersText)
+      openUrl(url).catch(console.error)
+    }, [originalTriggersText])
+
     return (
       <>
         {/* 発動条件 */}
         {hasTriggers && (
           <div className={getSectionStyle(darkMode)}>
-            <h4 className={getSectionHeaderStyle(darkMode)}>
-              <Icon name="lightning" className="w-3 h-3 inline-block mr-1" />
-              この{typeLabel}の使用タイミング
-            </h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className={getSectionHeaderStyle(darkMode) + ' mb-0'}>
+                <Icon name="lightning" className="w-3 h-3 inline-block mr-1" />
+                この{typeLabel}の使用タイミング
+              </h4>
+              {hasUntranslatedTriggers && (
+                <button
+                  type="button"
+                  onClick={handleOpenTranslation}
+                  className={`
+                    text-xs px-2 py-1 rounded flex items-center gap-1
+                    transition-colors
+                    ${darkMode
+                      ? 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/50 border border-blue-700'
+                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                    }
+                  `}
+                  title="Google翻訳で詳細を確認"
+                >
+                  <Icon name="externalLink" className="w-3 h-3" />
+                  ウェブで翻訳
+                </button>
+              )}
+            </div>
             <p className={`text-xs mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
               以下のような場合に使用されます：
             </p>
             <ul className="space-y-2">
-              {metadata.triggers.map((trigger, index) => (
+              {translatedTriggers.map((trigger, index) => (
                 <li
                   key={index}
                   className={`
@@ -94,7 +145,7 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean; 
                   <span className={`flex-shrink-0 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
                     •
                   </span>
-                  <span className="flex-1">{translateIfNeeded(trigger.condition)}</span>
+                  <span className="flex-1">{trigger.translated}</span>
                 </li>
               ))}
             </ul>
