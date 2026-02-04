@@ -1,20 +1,45 @@
 # Claude Code Settings Dashboard
 
-Claude Codeの設定ファイル（CLAUDE.md、スキル、エージェント、コマンド等）を一元管理できるダッシュボードアプリケーション。
+Claude Codeの設定ファイル（CLAUDE.md、スキル、エージェント等）を一元管理できるデスクトップアプリケーション。
 
 ## 特徴
 
-- **統合ダッシュボード**: 左サイドバーにファイルツリー、右にMonaco Editorを配置
-- **全文検索**: ファイル名と内容を横断検索
-- **自動バックアップ**: 編集時に自動でバックアップを作成
+### エディタ機能
+- **Monaco Editor統合**: VSCode同等の編集体験
+- **タブエディタ**: 複数ファイルの同時編集
+- **検索＆置換**: 正規表現対応、プレビュー、Undo機能
+- **Markdownプレビュー**: リアルタイムプレビュー表示
 - **構文検証**: YAML/JSON/Markdownの構文チェック
-- **ダークモード**: システム設定に連動したテーマ切り替え
-- **読み取り専用モード**: 誤編集防止
+
+### ファイル管理
+- **ファイルツリー**: 階層構造でファイルを表示・管理
+- **お気に入り**: よく使うファイルをピン留め
+- **バックアップ・復元**: 自動バックアップと履歴管理
+- **インポート/エクスポート**: 単体ファイル・ZIP一括対応
+
+### 依存関係グラフ
+- **ツリービュー**: スキル・エージェント間の参照関係を階層表示
+- **フィルタ機能**: 種類別の表示/非表示切り替え
+- **統計表示**: ファイル数・参照数などの統計情報
+- **詳細パネル**: 選択ノードの詳細情報（リサイズ可能）
+
+### スキル/エージェント情報
+- **メタデータ表示**: 発動条件、連携コンポーネント、使用例
+- **日本語翻訳**: 英語の発動条件をパターンマッチで自動翻訳
+- **ウェブ翻訳**: 翻訳しきれない英文はGoogle翻訳で確認可能
+
+### その他
+- **ダークモード**: ライト/ダーク切り替え
+- **AIレビュー**: Claude APIによるコードレビュー（オプション）
+
+## スクリーンショット
+
+（準備中）
 
 ## 必要な環境
 
 - Node.js 18以上
-- Rust（Tauriビルド用）
+- Rust 1.77以上（Tauriビルド用）
 - macOS / Windows / Linux
 
 ### Rustのインストール（未インストールの場合）
@@ -27,17 +52,18 @@ source ~/.cargo/env
 ## セットアップ
 
 ```bash
+# リポジトリのクローン
+git clone https://github.com/PCLAB-HUB/CCSD.git
+cd CCSD
+
 # 依存関係のインストール
 npm install
 
-# 開発サーバー起動（フロントエンドのみ）
-npm run dev
-
-# Tauriアプリとして開発起動
-npm run tauri:dev
+# 開発サーバー起動
+npm run tauri dev
 
 # プロダクションビルド
-npm run tauri:build
+npm run tauri build
 ```
 
 ## 管理対象ファイル
@@ -46,43 +72,69 @@ npm run tauri:build
 |------|------|------|
 | `~/.claude/CLAUDE.md` | Markdown | グローバル設定・メモリ |
 | `~/.claude/settings.json` | JSON | アプリケーション設定 |
-| `~/.claude/skills/*/SKILL.md` | YAML+Markdown | スキル定義 |
-| `~/.claude/commands/*.md` | Markdown | カスタムコマンド |
-| `~/.claude/agents/categories/*/` | YAML+Markdown | エージェント定義 |
-| `~/.claude/config/*.json` | JSON | 通知設定 |
+| `~/.claude/skills/*/` | YAML+Markdown | スキル定義 |
+| `~/.claude/agents/` | YAML+Markdown | エージェント定義 |
+| `<project>/CLAUDE.md` | Markdown | プロジェクト固有設定 |
 
 ## プロジェクト構造
 
 ```
 ClaudeSettingDashBoard/
-├── Docs/mtg/                    # PM会議資料
-│   ├── PM会議議事録_20260125.md
-│   └── 提案計画書.md
-├── src/                         # Reactフロントエンド
-│   ├── App.tsx
+├── src/                         # フロントエンド (React)
+│   ├── App.tsx                  # ルートコンポーネント
 │   ├── components/
-│   │   ├── layout/
-│   │   ├── editor/
-│   │   ├── tree/
-│   │   └── search/
-│   ├── hooks/
-│   └── styles/
-├── src-tauri/                   # Rustバックエンド
+│   │   ├── layout/              # Header, MainArea, Sidebar, StatusBar
+│   │   ├── editor/              # Monaco Editor関連
+│   │   ├── graph/               # 依存関係グラフ
+│   │   ├── search/              # 検索＆置換パネル
+│   │   ├── tabs/                # タブエディタUI
+│   │   └── tree/                # ファイルツリー
+│   ├── hooks/                   # カスタムフック
+│   │   ├── tauri/               # Tauri API層
+│   │   └── app/                 # 統合フック
+│   ├── types/                   # 型定義
+│   ├── utils/                   # ユーティリティ
+│   └── constants/               # 定数管理
+├── src-tauri/                   # バックエンド (Rust)
 │   ├── src/
-│   │   └── lib.rs
+│   │   ├── lib.rs               # エントリーポイント
+│   │   ├── commands/            # Tauriコマンド
+│   │   ├── types.rs             # 型定義
+│   │   └── error.rs             # エラー型
+│   ├── capabilities/            # 権限設定
 │   ├── Cargo.toml
 │   └── tauri.conf.json
 ├── package.json
+├── CLAUDE.md                    # プロジェクト設定
 └── README.md
 ```
 
 ## 技術スタック
 
-- **フレームワーク**: Tauri v2
-- **フロントエンド**: React 19 + TypeScript
-- **スタイリング**: TailwindCSS v4
-- **エディタ**: Monaco Editor
-- **バックエンド**: Rust
+| カテゴリ | 技術 |
+|----------|------|
+| フレームワーク | Tauri v2 |
+| フロントエンド | React 19 + TypeScript |
+| スタイリング | TailwindCSS v4 |
+| エディタ | Monaco Editor |
+| バックエンド | Rust |
+| プラグイン | tauri-plugin-fs, tauri-plugin-dialog, tauri-plugin-opener |
+
+## 開発コマンド
+
+```bash
+# 開発サーバー起動
+npm run tauri dev
+
+# プロダクションビルド
+npm run tauri build
+
+# TypeScriptチェック
+npx tsc --noEmit
+
+# Rustチェック
+cargo check --manifest-path src-tauri/Cargo.toml
+```
 
 ## ライセンス
 
