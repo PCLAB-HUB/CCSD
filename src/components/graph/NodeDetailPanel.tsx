@@ -51,8 +51,8 @@ const getTagStyle = (darkMode: boolean, variant: 'skill' | 'agent' | 'trigger'):
 /**
  * スキル/エージェントのメタデータ表示セクション
  */
-const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }>(
-  ({ metadata, darkMode }) => {
+const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean; nodeType?: string }>(
+  ({ metadata, darkMode, nodeType }) => {
     const hasTriggers = metadata.triggers.length > 0
     const hasRelatedSkills = metadata.relatedSkills.length > 0
     const hasRelatedAgents = metadata.relatedAgents.length > 0
@@ -64,6 +64,9 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }
       return null
     }
 
+    // ノードタイプに応じたラベル
+    const typeLabel = nodeType === 'subagent' ? 'エージェント' : 'スキル'
+
     return (
       <>
         {/* 発動条件 */}
@@ -71,9 +74,12 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }
           <div className={getSectionStyle(darkMode)}>
             <h4 className={getSectionHeaderStyle(darkMode)}>
               <Icon name="lightning" className="w-3 h-3 inline-block mr-1" />
-              発動条件
+              この{typeLabel}の使用タイミング
             </h4>
-            <ul className="space-y-1.5">
+            <p className={`text-xs mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              以下のような場合に使用されます：
+            </p>
+            <ul className="space-y-2">
               {metadata.triggers.map((trigger, index) => (
                 <li
                   key={index}
@@ -82,7 +88,9 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }
                     ${darkMode ? 'text-gray-300' : 'text-gray-700'}
                   `}
                 >
-                  <span className={getTagStyle(darkMode, 'trigger')}>条件</span>
+                  <span className={`flex-shrink-0 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
+                    •
+                  </span>
                   <span className="flex-1">{trigger.condition}</span>
                 </li>
               ))}
@@ -95,13 +103,16 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }
           <div className={getSectionStyle(darkMode)}>
             <h4 className={getSectionHeaderStyle(darkMode)}>
               <Icon name="link" className="w-3 h-3 inline-block mr-1" />
-              連携コンポーネント
+              一緒に使用されるコンポーネント
             </h4>
+            <p className={`text-xs mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              この{typeLabel}と連携して動作します：
+            </p>
             <div className="space-y-2">
               {hasRelatedSkills && (
                 <div>
                   <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    スキル:
+                    関連スキル:
                   </span>
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     {metadata.relatedSkills.map((skill) => (
@@ -115,7 +126,7 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }
               {hasRelatedAgents && (
                 <div>
                   <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    エージェント:
+                    関連エージェント:
                   </span>
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     {metadata.relatedAgents.map((agent) => (
@@ -135,7 +146,7 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }
           <div className={getSectionStyle(darkMode)}>
             <h4 className={getSectionHeaderStyle(darkMode)}>
               <Icon name="star" className="w-3 h-3 inline-block mr-1" />
-              キーポイント
+              重要なポイント
             </h4>
             <ul className="space-y-1">
               {metadata.keyPoints?.map((point, index) => (
@@ -147,7 +158,7 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }
                   `}
                 >
                   <span className={`text-xs ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                    •
+                    ★
                   </span>
                   <span className="flex-1">{point}</span>
                 </li>
@@ -331,7 +342,7 @@ const NodeDetailPanel = memo<NodeDetailPanelProps>(({
 
         {/* メタデータセクション（スキル/エージェントの場合） */}
         {node.metadata && (
-          <SkillMetadataSection metadata={node.metadata} darkMode={darkMode} />
+          <SkillMetadataSection metadata={node.metadata} darkMode={darkMode} nodeType={node.type} />
         )}
 
         {/* 参照先 */}

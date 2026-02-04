@@ -382,7 +382,7 @@ export function extractSkillName(content: string): string | null {
 /**
  * descriptionから発動条件を抽出
  *
- * "Use when..." パターンを解析して発動条件を構造化
+ * "Use when...", "Use this agent when..." パターンを解析して発動条件を構造化
  *
  * @param content - ファイルコンテンツ
  * @returns 発動条件の配列
@@ -393,24 +393,41 @@ export function extractTriggers(content: string): TriggerInfo[] {
 
   if (!description) return triggers
 
-  // "Use when..." パターンを検出
-  const useWhenMatch = description.match(/use when\s+(.+)/i)
-  if (useWhenMatch) {
-    const condition = useWhenMatch[1].trim()
-    // カンマや "or" で分割して複数の条件を抽出
-    const conditions = condition.split(/,\s*(?:or\s+)?|(?:\s+or\s+)/i)
-    for (const cond of conditions) {
-      const trimmed = cond.trim()
-      if (trimmed) {
-        triggers.push({ condition: trimmed })
+  // "Use this agent when..." パターン（エージェント向け）
+  const useAgentMatch = description.match(/use this (?:agent|tool)\s+when\s+(.+?)(?:\.|Examples:|$)/is)
+  if (useAgentMatch) {
+    const condition = useAgentMatch[1].trim()
+    triggers.push({ condition })
+  }
+
+  // "Use when..." パターンを検出（"use this agent when"を除く）
+  if (!useAgentMatch) {
+    const useWhenMatch = description.match(/use when\s+(.+?)(?:\.|$)/i)
+    if (useWhenMatch) {
+      const condition = useWhenMatch[1].trim()
+      // カンマや "or" で分割して複数の条件を抽出
+      const conditions = condition.split(/,\s*(?:or\s+)?|(?:\s+or\s+)/i)
+      for (const cond of conditions) {
+        const trimmed = cond.trim()
+        if (trimmed) {
+          triggers.push({ condition: trimmed })
+        }
       }
     }
   }
 
   // "You MUST use this before..." パターン
-  const mustUseMatch = description.match(/you must use this (?:before|when)\s+(.+)/i)
+  const mustUseMatch = description.match(/you must use this (?:before|when)\s+(.+?)(?:\.|$)/i)
   if (mustUseMatch) {
     triggers.push({ condition: mustUseMatch[1].trim() })
+  }
+
+  // 説明文がそのまま使用条件を表している場合（短い説明文）
+  if (triggers.length === 0 && description.length < 200) {
+    // 動詞で始まる説明文は使用条件として扱う
+    if (/^(simplif|refin|analyz|review|creat|generat|help|assist)/i.test(description)) {
+      triggers.push({ condition: description })
+    }
   }
 
   // 本文中の "## When to Use" セクションから追加条件を抽出
@@ -430,6 +447,42 @@ export function extractTriggers(content: string): TriggerInfo[] {
   }
 
   return triggers
+}
+
+/**
+ * <example>タグから使用例を抽出（エージェント向け）
+ *
+ * @param content - ファイルコンテンツ
+ * @returns 使用例の配列
+ */
+export function extractAgentExamples(content: string): ExampleInfo[] {
+  const examples: ExampleInfo[] = []
+  const description = extractDescription(content)
+
+  if (!description) return examples
+
+  // <example>タグから使用例を抽出
+  const exampleMatches = description.matchAll(/<example>([\s\S]*?)<\/example>/gi)
+  for (const match of exampleMatches) {
+    const exampleContent = match[1]
+
+    // user: と assistant: のやり取りを抽出
+    const userMatch = exampleContent.match(/user:\s*["']?([^"'\n]+)["']?/i)
+    const commentaryMatch = exampleContent.match(/<commentary>([^<]+)<\/commentary>/i)
+
+    if (userMatch) {
+      const userInput = userMatch[1].trim()
+      const commentary = commentaryMatch ? commentaryMatch[1].trim() : ''
+
+      examples.push({
+        title: 'ユーザー入力例',
+        content: `「${userInput}」${commentary ? `\n→ ${commentary}` : ''}`,
+        type: 'text',
+      })
+    }
+  }
+
+  return examples.slice(0, 3) // 最大3つまで
 }
 
 /**
@@ -494,7 +547,7 @@ export function extractRelatedAgents(content: string): string[] {
 /**
  * 使用例を抽出
  *
- * コードブロック、Example セクション、Quick version セクションから抽出
+ * コードブロック、Example セクション、Quick version セクション、<example>タグから抽出
  *
  * @param content - ファイルコンテンツ
  * @returns 使用例の配列
@@ -502,13 +555,17 @@ export function extractRelatedAgents(content: string): string[] {
 export function extractExamples(content: string): ExampleInfo[] {
   const examples: ExampleInfo[] = []
 
+  // <example>タグから使用例を抽出（エージェント向け）
+  const agentExamples = extractAgentExamples(content)
+  examples.push(...agentExamples)
+
   // "Example:" または "**Example:**" の後のコードブロック
   const exampleBlocks = content.matchAll(/(?:\*\*)?Example(?:\s*\([^)]+\))?:?\*?\*?\s*\n```\w*\n([\s\S]*?)```/gi)
   for (const match of exampleBlocks) {
     const code = match[1].trim()
     if (code) {
       examples.push({
-        title: 'Example',
+        title: '使用例',
         content: code,
         type: 'code',
       })
@@ -521,7 +578,7 @@ export function extractExamples(content: string): ExampleInfo[] {
     const quickContent = quickMatch[1].trim()
     if (quickContent) {
       examples.push({
-        title: 'Quick version',
+        title: 'クイックガイド',
         content: quickContent,
         type: 'text',
       })
