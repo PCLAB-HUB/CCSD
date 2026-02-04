@@ -1,6 +1,7 @@
 import { memo } from 'react'
 
 import { Icon } from '../common'
+import { translateIfNeeded } from '../../utils/translationPatterns'
 
 import type { NodeDetail, GraphNode, TreeNode, NodeType, SkillMetadata } from '../../types/graph'
 import { NODE_TYPE_LABELS, NODE_TYPE_BADGE_STYLES, BADGE_BASE_STYLE } from '../../constants/graph'
@@ -93,7 +94,7 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean; 
                   <span className={`flex-shrink-0 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
                     •
                   </span>
-                  <span className="flex-1">{trigger.condition}</span>
+                  <span className="flex-1">{translateIfNeeded(trigger.condition)}</span>
                 </li>
               ))}
             </ul>
@@ -162,7 +163,7 @@ const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean; 
                   <span className={`text-xs ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
                     ★
                   </span>
-                  <span className="flex-1">{point}</span>
+                  <span className="flex-1">{translateIfNeeded(point)}</span>
                 </li>
               ))}
             </ul>
