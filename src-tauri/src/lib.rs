@@ -61,6 +61,7 @@ use commands::{
     open_preview_window,
     // stats
     get_stats,
+    get_stats_detail,
 };
 
 /// アプリケーションのエントリーポイント
@@ -111,6 +112,7 @@ pub fn run() {
             is_preview_window_open,
             // 統計
             get_stats,
+            get_stats_detail,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
