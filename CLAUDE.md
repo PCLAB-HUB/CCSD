@@ -106,73 +106,37 @@ npx tsc --noEmit     # TypeScriptチェック
 ```
 
 ## 現在の作業状態
-**最終更新: 2026-02-04**
+**最終更新: 2026-02-05**
 
-### 今回セッションで実装した機能（未完了）
-**ターミナル統合機能** - Claude Codeを内部で起動するための機能
+### ターミナル統合機能 ✅ 完了
+Claude Codeを内部で起動するためのターミナル機能が完成。
 
-#### 実装済みファイル:
+#### 実装ファイル:
 - `src-tauri/src/commands/terminal.rs` - Rust PTY管理（portable-pty）
-- `src/types/terminal.ts` - TypeScript型定義
 - `src/hooks/useTerminal.ts` - PTY接続・入出力管理
 - `src/hooks/useTerminalPanel.ts` - パネル状態管理
-- `src/hooks/useQuickCommands.ts` - クイックコマンド管理
-- `src/hooks/useTerminalHistory.ts` - コマンド履歴管理
-- `src/components/terminal/` - UIコンポーネント群
-  - TerminalPanel.tsx（forwardRef対応済み）
-  - TerminalView.tsx（xterm.js）
-  - QuickCommands.tsx
-  - TerminalTabs.tsx
-  - TerminalToolbar.tsx
+- `src/components/terminal/` - UIコンポーネント群（TerminalPanel, TerminalView等）
 
-#### 設計ドキュメント:
-- `docs/plans/2026-02-04-terminal-integration-design.md`
-
-### 今回のセッションで修正した問題
-**Claudeボタンを押してもClaude Codeが起動しない問題**
-
-#### 根本原因:
-タイミング問題 - `spawn_terminal`呼び出し中にRustからイベントが発火されるが、
-セッションIDがまだフロントエンドに設定されていないため、イベントが無視されていた。
-
-#### 修正内容:
-1. **セッションIDのタイミング問題を修正** (`useTerminal.ts`)
-   - `pendingSessionIdRef`と`isSpawningRef`を追加
-   - `isAllowedSession`関数で起動中のセッションからのイベントを許可
-   - 最初のイベント受信時にpendingSessionIdRefを自動設定
-
-2. **パネル自動オープン** (`App.tsx`)
-   - `handleExecuteTerminalCommand`でコマンド実行前にパネルを開く
-   - TerminalViewがマウントされるまで待機してからspawn
-
-3. **デバッグログの追加**
-   - フロー追跡用のconsole.logを各ポイントに追加
+#### 解決した問題:
+1. **セッションIDタイミング問題** - `pendingSessionIdRef`と`isSpawningRef`で解決
+2. **ターミナル再作成問題** - useEffectの依存配列からコールバックを削除、refで保持
 
 ### 直近コミット
 ```
+bdc5d09 fix: TerminalViewのuseEffect依存配列を修正
+612948b docs: CLAUDE.mdにターミナル修正内容を記載
 67aacaf fix: ターミナルセッションIDのタイミング問題を修正
-ca3a86d fix: TerminalPanelにforwardRefを追加しref接続を修正
-aff70cf fix: ターミナルのセッションID管理を修正
-1d9fbe2 fix: ターミナルパネルのレイアウトを右寄せに変更
-1108a61 feat: ターミナル統合機能を追加
 ```
-
-### 動作確認手順
-1. アプリを起動 (`npm run tauri dev`)
-2. 画面下部の「ターミナル」をクリックしてパネルを開く
-3. 「Claude」ボタンをクリック
-4. ブラウザの開発者ツールでコンソールログを確認:
-   - `[App] handleExecuteTerminalCommand called`
-   - `[useTerminal] Starting spawn`
-   - `[useTerminal] spawn_terminal returned`
-   - `[useTerminal] isAllowedSession check` (allowed状態になること)
-   - `[App] onOutput received`
 
 ### 開発環境の状態
 - 開発サーバー: ポート1420で動作中
 - Git: mainブランチ、複数コミットpush待ち
 
+### 次のタスク候補
+- デバッグログの削除（本番用クリーンアップ）
+- Git自動化コマンドの実装
+- 複数ファイル一括置換
+
 ## 既知の問題・TODO
-- **ターミナル統合機能** - 修正済み、テスト待ち
 - プレビュー専用ウィンドウ（延期中）
 - カスタムテンプレート追加（延期中）
