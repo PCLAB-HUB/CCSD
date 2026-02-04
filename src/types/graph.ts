@@ -52,6 +52,8 @@ export interface GraphNode {
   color?: string
   /** ファイル読み込みエラーがあるか */
   hasError?: boolean
+  /** スキル/エージェントの拡張メタデータ（オプション） */
+  metadata?: SkillMetadata
 }
 
 /**
@@ -110,6 +112,56 @@ export interface ReferenceMatch {
   name: string
   /** 元のマッチ文字列 */
   raw: string
+}
+
+// ============================================================
+// スキル/エージェント詳細情報
+// ============================================================
+
+/**
+ * 発動条件の情報
+ *
+ * スキルやエージェントがどのような指示で発動するかを表現
+ */
+export interface TriggerInfo {
+  /** 発動条件の説明 */
+  condition: string
+  /** 発動条件の例（ユーザー指示の例） */
+  examples?: string[]
+}
+
+/**
+ * 使用例の情報
+ */
+export interface ExampleInfo {
+  /** 例のタイトル（オプション） */
+  title?: string
+  /** 例の説明またはコード */
+  content: string
+  /** 例のタイプ（コード、テキスト、フロー） */
+  type: 'code' | 'text' | 'flow'
+}
+
+/**
+ * スキル/エージェントの拡張メタデータ
+ *
+ * 発動条件、連携情報、使用例などを含む
+ */
+export interface SkillMetadata {
+  /** スキル名（frontmatterから） */
+  name?: string
+  /** 発動条件一覧 */
+  triggers: TriggerInfo[]
+  /** 連携するスキル名一覧 */
+  relatedSkills: string[]
+  /** 連携するエージェント名一覧 */
+  relatedAgents: string[]
+  /** 使用例一覧 */
+  examples: ExampleInfo[]
+  /** フローチャート（graphviz形式、オプション） */
+  flowChart?: string
+  /** キーポイント（重要な原則やルール） */
+  keyPoints?: string[]
 }
 
 // ============================================================

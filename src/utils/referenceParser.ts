@@ -5,7 +5,7 @@
  * 依存関係を検出するためのパーサー
  */
 
-import type { ReferenceMatch, NodeType } from '../types/graph'
+import type { ReferenceMatch, NodeType, SkillMetadata, TriggerInfo, ExampleInfo } from '../types/graph'
 
 // ============================================================================
 // 定数・パターン定義
@@ -358,4 +358,255 @@ export function parseAndResolveReferences(
   }
 
   return { resolved, unresolved }
+}
+
+// ============================================================================
+// スキルメタデータ解析
+// ============================================================================
+
+/**
+ * フロントマターからスキル名を抽出
+ *
+ * @param content - ファイルコンテンツ
+ * @returns スキル名、または見つからなければnull
+ */
+export function extractSkillName(content: string): string | null {
+  const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/)
+  if (!frontmatterMatch) return null
+
+  const frontmatter = frontmatterMatch[1]
+  const nameMatch = frontmatter.match(/^name:\s*["']?([^"'\n]+)["']?\s*$/m)
+  return nameMatch ? nameMatch[1].trim() : null
+}
+
+/**
+ * descriptionから発動条件を抽出
+ *
+ * "Use when..." パターンを解析して発動条件を構造化
+ *
+ * @param content - ファイルコンテンツ
+ * @returns 発動条件の配列
+ */
+export function extractTriggers(content: string): TriggerInfo[] {
+  const triggers: TriggerInfo[] = []
+  const description = extractDescription(content)
+
+  if (!description) return triggers
+
+  // "Use when..." パターンを検出
+  const useWhenMatch = description.match(/use when\s+(.+)/i)
+  if (useWhenMatch) {
+    const condition = useWhenMatch[1].trim()
+    // カンマや "or" で分割して複数の条件を抽出
+    const conditions = condition.split(/,\s*(?:or\s+)?|(?:\s+or\s+)/i)
+    for (const cond of conditions) {
+      const trimmed = cond.trim()
+      if (trimmed) {
+        triggers.push({ condition: trimmed })
+      }
+    }
+  }
+
+  // "You MUST use this before..." パターン
+  const mustUseMatch = description.match(/you must use this (?:before|when)\s+(.+)/i)
+  if (mustUseMatch) {
+    triggers.push({ condition: mustUseMatch[1].trim() })
+  }
+
+  // 本文中の "## When to Use" セクションから追加条件を抽出
+  const whenToUseMatch = content.match(/##\s*When to Use\s*\n([\s\S]*?)(?=\n##|$)/i)
+  if (whenToUseMatch) {
+    const section = whenToUseMatch[1]
+    // リスト項目を抽出
+    const listItems = section.match(/^[-*]\s+(.+)$/gm)
+    if (listItems) {
+      for (const item of listItems.slice(0, 5)) { // 最大5つまで
+        const text = item.replace(/^[-*]\s+/, '').trim()
+        if (text && !triggers.some(t => t.condition === text)) {
+          triggers.push({ condition: text })
+        }
+      }
+    }
+  }
+
+  return triggers
+}
+
+/**
+ * 連携するスキルを抽出
+ *
+ * 本文中の "superpowers:xxx" パターンと "Related skills:" セクションから抽出
+ *
+ * @param content - ファイルコンテンツ
+ * @returns 連携スキル名の配列
+ */
+export function extractRelatedSkills(content: string): string[] {
+  const skills = new Set<string>()
+
+  // superpowers:xxx パターン
+  const superpowersMatches = content.matchAll(/superpowers:([a-z][a-z0-9-]*)/gi)
+  for (const match of superpowersMatches) {
+    skills.add(match[1].toLowerCase())
+  }
+
+  // "Related skills:" セクション
+  const relatedMatch = content.match(/\*\*Related skills:\*\*\s*\n([\s\S]*?)(?=\n\n|\n\*\*|$)/i)
+  if (relatedMatch) {
+    const listItems = relatedMatch[1].match(/[-*]\s+\*\*([^*]+)\*\*/g)
+    if (listItems) {
+      for (const item of listItems) {
+        const nameMatch = item.match(/\*\*([^*]+)\*\*/)
+        if (nameMatch) {
+          const name = nameMatch[1].replace(/superpowers:/i, '').trim()
+          skills.add(name.toLowerCase())
+        }
+      }
+    }
+  }
+
+  return Array.from(skills)
+}
+
+/**
+ * 連携するエージェントを抽出
+ *
+ * @param content - ファイルコンテンツ
+ * @returns 連携エージェント名の配列
+ */
+export function extractRelatedAgents(content: string): string[] {
+  const agents = new Set<string>()
+
+  // subagent_type パターン
+  const subagentMatches = content.matchAll(/subagent_type[=:]\s*["']?([A-Za-z][A-Za-z0-9-]*)["']?/gi)
+  for (const match of subagentMatches) {
+    agents.add(match[1].toLowerCase())
+  }
+
+  // Task tool with agent type
+  const taskMatches = content.matchAll(/Task.*?(?:subagent_type|agent)[=:]\s*["']?([A-Za-z][A-Za-z0-9-]*)["']?/gi)
+  for (const match of taskMatches) {
+    agents.add(match[1].toLowerCase())
+  }
+
+  return Array.from(agents)
+}
+
+/**
+ * 使用例を抽出
+ *
+ * コードブロック、Example セクション、Quick version セクションから抽出
+ *
+ * @param content - ファイルコンテンツ
+ * @returns 使用例の配列
+ */
+export function extractExamples(content: string): ExampleInfo[] {
+  const examples: ExampleInfo[] = []
+
+  // "Example:" または "**Example:**" の後のコードブロック
+  const exampleBlocks = content.matchAll(/(?:\*\*)?Example(?:\s*\([^)]+\))?:?\*?\*?\s*\n```\w*\n([\s\S]*?)```/gi)
+  for (const match of exampleBlocks) {
+    const code = match[1].trim()
+    if (code) {
+      examples.push({
+        title: 'Example',
+        content: code,
+        type: 'code',
+      })
+    }
+  }
+
+  // "Quick version:" セクション
+  const quickMatch = content.match(/\*\*Quick version:\*\*\s*\n([\s\S]*?)(?=\n\n##|\n\*\*|$)/i)
+  if (quickMatch) {
+    const quickContent = quickMatch[1].trim()
+    if (quickContent) {
+      examples.push({
+        title: 'Quick version',
+        content: quickContent,
+        type: 'text',
+      })
+    }
+  }
+
+  return examples.slice(0, 3) // 最大3つまで
+}
+
+/**
+ * フローチャート（graphviz形式）を抽出
+ *
+ * @param content - ファイルコンテンツ
+ * @returns graphviz形式のフローチャート、または見つからなければnull
+ */
+export function extractFlowChart(content: string): string | null {
+  // ```dot または digraph を含むコードブロック
+  const dotMatch = content.match(/```(?:dot|graphviz)\s*\n([\s\S]*?)```/i)
+  if (dotMatch) {
+    return dotMatch[1].trim()
+  }
+
+  // digraph で始まるブロック（コードブロック外）
+  const digraphMatch = content.match(/digraph\s+\w+\s*\{[\s\S]*?\}/i)
+  if (digraphMatch) {
+    return digraphMatch[0].trim()
+  }
+
+  return null
+}
+
+/**
+ * キーポイント（重要な原則）を抽出
+ *
+ * "Key Principles", "Core principle", "Iron Law" などのセクションから抽出
+ *
+ * @param content - ファイルコンテンツ
+ * @returns キーポイントの配列
+ */
+export function extractKeyPoints(content: string): string[] {
+  const points: string[] = []
+
+  // "## Key Principles" セクション
+  const keyPrinciplesMatch = content.match(/##\s*Key Principles?\s*\n([\s\S]*?)(?=\n##|$)/i)
+  if (keyPrinciplesMatch) {
+    const listItems = keyPrinciplesMatch[1].match(/^[-*]\s+\*\*([^*]+)\*\*/gm)
+    if (listItems) {
+      for (const item of listItems.slice(0, 5)) {
+        const textMatch = item.match(/\*\*([^*]+)\*\*/)
+        if (textMatch) {
+          points.push(textMatch[1].trim())
+        }
+      }
+    }
+  }
+
+  // "Core principle:" パターン
+  const coreMatch = content.match(/\*\*Core principle:\*\*\s*(.+)/i)
+  if (coreMatch) {
+    points.push(coreMatch[1].trim())
+  }
+
+  // "## The Iron Law" セクション
+  const ironLawMatch = content.match(/##\s*The Iron Law\s*\n```\s*\n(.+)\n```/i)
+  if (ironLawMatch) {
+    points.push(ironLawMatch[1].trim())
+  }
+
+  return points
+}
+
+/**
+ * ファイルコンテンツから完全なスキルメタデータを抽出
+ *
+ * @param content - ファイルコンテンツ
+ * @returns スキルメタデータ
+ */
+export function extractSkillMetadata(content: string): SkillMetadata {
+  return {
+    name: extractSkillName(content) ?? undefined,
+    triggers: extractTriggers(content),
+    relatedSkills: extractRelatedSkills(content),
+    relatedAgents: extractRelatedAgents(content),
+    examples: extractExamples(content),
+    flowChart: extractFlowChart(content) ?? undefined,
+    keyPoints: extractKeyPoints(content),
+  }
 }

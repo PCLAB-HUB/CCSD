@@ -12,6 +12,7 @@ import {
   matchesKnownFile,
   getFileTypeFromPath,
   extractDescription,
+  extractSkillMetadata,
 } from './referenceParser'
 import {
   getNodeColor,
@@ -178,6 +179,7 @@ export async function loadFile(path: string): Promise<LoadedFile> {
  *
  * 読み込み済みファイル情報からグラフノードを生成する
  * エラーがあるファイルはグレー色で表示
+ * スキル/サブエージェントファイルの場合はメタデータも抽出
  *
  * @param file - 読み込み済みファイル
  * @returns GraphNode
@@ -185,6 +187,10 @@ export async function loadFile(path: string): Promise<LoadedFile> {
 export function createNodeFromFile(file: LoadedFile): GraphNode {
   // extractDescriptionはnullを返す可能性があるため、undefinedに変換
   const description = file.hasError ? undefined : (extractDescription(file.content) ?? undefined)
+
+  // スキル/サブエージェントの場合はメタデータを抽出
+  const shouldExtractMetadata = !file.hasError && (file.type === 'skill' || file.type === 'subagent')
+  const metadata = shouldExtractMetadata ? extractSkillMetadata(file.content) : undefined
 
   return {
     id: createGraphNodeId(file.path),
@@ -194,6 +200,7 @@ export function createNodeFromFile(file: LoadedFile): GraphNode {
     description,
     color: file.hasError ? '#9ca3af' : getNodeColor(file.type), // gray-400 for error
     hasError: file.hasError,
+    metadata,
   }
 }
 

@@ -2,7 +2,7 @@ import { memo } from 'react'
 
 import { Icon } from '../common'
 
-import type { NodeDetail, GraphNode, TreeNode, NodeType } from '../../types/graph'
+import type { NodeDetail, GraphNode, TreeNode, NodeType, SkillMetadata } from '../../types/graph'
 import { NODE_TYPE_LABELS, NODE_TYPE_BADGE_STYLES, BADGE_BASE_STYLE } from '../../constants/graph'
 
 interface NodeDetailPanelProps {
@@ -18,6 +18,189 @@ const getNodeTypeBadgeStyle = (type: NodeType, darkMode: boolean): string => {
   const mode = darkMode ? 'dark' : 'light'
   return `${BADGE_BASE_STYLE} ${NODE_TYPE_BADGE_STYLES[mode][type]}`
 }
+
+/** セクションヘッダーのスタイル */
+const getSectionHeaderStyle = (darkMode: boolean): string => `
+  text-xs font-medium mb-2
+  ${darkMode ? 'text-gray-400' : 'text-gray-500'}
+`
+
+/** セクションコンテナのスタイル */
+const getSectionStyle = (darkMode: boolean): string => `
+  p-4 border-b
+  ${darkMode ? 'border-gray-700' : 'border-gray-200'}
+`
+
+/** タグバッジのスタイル */
+const getTagStyle = (darkMode: boolean, variant: 'skill' | 'agent' | 'trigger'): string => {
+  const baseStyle = 'text-xs px-2 py-0.5 rounded-full'
+  const variantStyles = {
+    skill: darkMode
+      ? 'bg-green-900/50 text-green-300 border border-green-700'
+      : 'bg-green-100 text-green-700 border border-green-200',
+    agent: darkMode
+      ? 'bg-purple-900/50 text-purple-300 border border-purple-700'
+      : 'bg-purple-100 text-purple-700 border border-purple-200',
+    trigger: darkMode
+      ? 'bg-amber-900/50 text-amber-300 border border-amber-700'
+      : 'bg-amber-100 text-amber-700 border border-amber-200',
+  }
+  return `${baseStyle} ${variantStyles[variant]}`
+}
+
+/**
+ * スキル/エージェントのメタデータ表示セクション
+ */
+const SkillMetadataSection = memo<{ metadata: SkillMetadata; darkMode: boolean }>(
+  ({ metadata, darkMode }) => {
+    const hasTriggers = metadata.triggers.length > 0
+    const hasRelatedSkills = metadata.relatedSkills.length > 0
+    const hasRelatedAgents = metadata.relatedAgents.length > 0
+    const hasKeyPoints = metadata.keyPoints && metadata.keyPoints.length > 0
+    const hasExamples = metadata.examples.length > 0
+
+    // 表示するコンテンツがない場合は何も表示しない
+    if (!hasTriggers && !hasRelatedSkills && !hasRelatedAgents && !hasKeyPoints && !hasExamples) {
+      return null
+    }
+
+    return (
+      <>
+        {/* 発動条件 */}
+        {hasTriggers && (
+          <div className={getSectionStyle(darkMode)}>
+            <h4 className={getSectionHeaderStyle(darkMode)}>
+              <Icon name="lightning" className="w-3 h-3 inline-block mr-1" />
+              発動条件
+            </h4>
+            <ul className="space-y-1.5">
+              {metadata.triggers.map((trigger, index) => (
+                <li
+                  key={index}
+                  className={`
+                    text-sm flex items-start gap-2
+                    ${darkMode ? 'text-gray-300' : 'text-gray-700'}
+                  `}
+                >
+                  <span className={getTagStyle(darkMode, 'trigger')}>条件</span>
+                  <span className="flex-1">{trigger.condition}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 連携コンポーネント */}
+        {(hasRelatedSkills || hasRelatedAgents) && (
+          <div className={getSectionStyle(darkMode)}>
+            <h4 className={getSectionHeaderStyle(darkMode)}>
+              <Icon name="link" className="w-3 h-3 inline-block mr-1" />
+              連携コンポーネント
+            </h4>
+            <div className="space-y-2">
+              {hasRelatedSkills && (
+                <div>
+                  <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    スキル:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {metadata.relatedSkills.map((skill) => (
+                      <span key={skill} className={getTagStyle(darkMode, 'skill')}>
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {hasRelatedAgents && (
+                <div>
+                  <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    エージェント:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {metadata.relatedAgents.map((agent) => (
+                      <span key={agent} className={getTagStyle(darkMode, 'agent')}>
+                        {agent}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* キーポイント */}
+        {hasKeyPoints && (
+          <div className={getSectionStyle(darkMode)}>
+            <h4 className={getSectionHeaderStyle(darkMode)}>
+              <Icon name="star" className="w-3 h-3 inline-block mr-1" />
+              キーポイント
+            </h4>
+            <ul className="space-y-1">
+              {metadata.keyPoints?.map((point, index) => (
+                <li
+                  key={index}
+                  className={`
+                    text-sm flex items-start gap-2
+                    ${darkMode ? 'text-gray-300' : 'text-gray-700'}
+                  `}
+                >
+                  <span className={`text-xs ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                    •
+                  </span>
+                  <span className="flex-1">{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 使用例 */}
+        {hasExamples && (
+          <div className={getSectionStyle(darkMode)}>
+            <h4 className={getSectionHeaderStyle(darkMode)}>
+              <Icon name="code" className="w-3 h-3 inline-block mr-1" />
+              使用例
+            </h4>
+            <div className="space-y-2">
+              {metadata.examples.map((example, index) => (
+                <div key={index}>
+                  {example.title && (
+                    <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {example.title}
+                    </span>
+                  )}
+                  <div
+                    className={`
+                      mt-1 text-xs font-mono p-2 rounded overflow-x-auto
+                      ${example.type === 'code'
+                        ? darkMode
+                          ? 'bg-gray-800 text-green-400'
+                          : 'bg-gray-100 text-gray-800'
+                        : darkMode
+                          ? 'bg-gray-800 text-gray-300'
+                          : 'bg-gray-50 text-gray-700'
+                      }
+                    `}
+                  >
+                    <pre className="whitespace-pre-wrap break-all">
+                      {example.content.length > 200
+                        ? `${example.content.slice(0, 200)}...`
+                        : example.content}
+                    </pre>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+)
+
+SkillMetadataSection.displayName = 'SkillMetadataSection'
 
 /**
  * ノード詳細パネル
@@ -144,6 +327,11 @@ const NodeDetailPanel = memo<NodeDetailPanelProps>(({
               {node.description}
             </p>
           </div>
+        )}
+
+        {/* メタデータセクション（スキル/エージェントの場合） */}
+        {node.metadata && (
+          <SkillMetadataSection metadata={node.metadata} darkMode={darkMode} />
         )}
 
         {/* 参照先 */}
