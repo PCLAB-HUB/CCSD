@@ -118,7 +118,17 @@ const TerminalPanel = memo(forwardRef<TerminalPanelHandle, TerminalPanelProps>((
   // 外部からアクセス可能なハンドルを公開
   useImperativeHandle(ref, () => ({
     write: (data: string) => {
-      terminalRef.current?.write(data)
+      console.log('[TerminalPanel] write called:', {
+        dataLength: data.length,
+        hasTerminalRef: !!terminalRef.current,
+        isOpen,
+        activeTab,
+      })
+      if (terminalRef.current) {
+        terminalRef.current.write(data)
+      } else {
+        console.warn('[TerminalPanel] terminalRef.current is null!')
+      }
     },
     clear: () => {
       terminalRef.current?.clear()
@@ -129,7 +139,7 @@ const TerminalPanel = memo(forwardRef<TerminalPanelHandle, TerminalPanelProps>((
     fit: () => {
       terminalRef.current?.fit()
     },
-  }), [])
+  }), [isOpen, activeTab])
 
   // ローカルストレージから高さを復元
   useEffect(() => {

@@ -91,9 +91,24 @@ const TerminalView = forwardRef<TerminalViewHandle, TerminalViewProps>(
     const terminalRef = useRef<Terminal | null>(null)
     const fitAddonRef = useRef<FitAddon | null>(null)
 
-    // ターミナルインスタンスの初期化
+    // コールバックをrefで保持（再作成を防ぐため）
+    const onDataRef = useRef(onData)
+    const onResizeRef = useRef(onResize)
+
+    // コールバックが変わったらrefを更新
+    useEffect(() => {
+      onDataRef.current = onData
+    }, [onData])
+
+    useEffect(() => {
+      onResizeRef.current = onResize
+    }, [onResize])
+
+    // ターミナルインスタンスの初期化（fontSize/fontFamilyが変わったときのみ再作成）
     useEffect(() => {
       if (!containerRef.current) return
+
+      console.log('[TerminalView] Creating terminal instance...')
 
       // ターミナルを作成
       const terminal = new Terminal({
@@ -116,35 +131,48 @@ const TerminalView = forwardRef<TerminalViewHandle, TerminalViewProps>(
 
       // DOMにアタッチ
       terminal.open(containerRef.current)
+      console.log('[TerminalView] Terminal opened, container:', {
+        width: containerRef.current.offsetWidth,
+        height: containerRef.current.offsetHeight,
+      })
 
       // 初回フィット
       setTimeout(() => {
-        fitAddon.fit()
-      }, 0)
+        try {
+          fitAddon.fit()
+          console.log('[TerminalView] Initial fit done, terminal size:', {
+            cols: terminal.cols,
+            rows: terminal.rows,
+          })
+        } catch (e) {
+          console.error('[TerminalView] Initial fit failed:', e)
+        }
+      }, 100)
 
       // 参照を保存
       terminalRef.current = terminal
       fitAddonRef.current = fitAddon
 
-      // データ入力イベント
+      // データ入力イベント（refを通じてコールバックにアクセス）
       const dataDisposable = terminal.onData((data) => {
-        onData?.(data)
+        onDataRef.current?.(data)
       })
 
-      // リサイズイベント
+      // リサイズイベント（refを通じてコールバックにアクセス）
       const resizeDisposable = terminal.onResize(({ cols, rows }) => {
-        onResize?.(cols, rows)
+        onResizeRef.current?.(cols, rows)
       })
 
       // クリーンアップ
       return () => {
+        console.log('[TerminalView] Disposing terminal instance...')
         dataDisposable.dispose()
         resizeDisposable.dispose()
         terminal.dispose()
         terminalRef.current = null
         fitAddonRef.current = null
       }
-    }, [fontSize, fontFamily, onData, onResize])
+    }, [fontSize, fontFamily]) // onData, onResizeを依存配列から削除
 
     // コンテナサイズ変更時のリサイズ対応
     useEffect(() => {
@@ -185,7 +213,16 @@ const TerminalView = forwardRef<TerminalViewHandle, TerminalViewProps>(
           terminalRef.current?.focus()
         },
         write: (data: string) => {
-          terminalRef.current?.write(data)
+          console.log('[TerminalView] write called:', {
+            dataLength: data.length,
+            hasTerminal: !!terminalRef.current,
+          })
+          if (terminalRef.current) {
+            terminalRef.current.write(data)
+            console.log('[TerminalView] write to xterm.js done')
+          } else {
+            console.warn('[TerminalView] terminalRef.current is null!')
+          }
         },
         clear: () => {
           terminalRef.current?.clear()
