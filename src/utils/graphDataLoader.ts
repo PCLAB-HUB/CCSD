@@ -69,6 +69,27 @@ export const DEMO_NODES: GraphNode[] = [
     path: '~/.claude/skills/refactor.md',
     description: 'リファクタリングスキル',
     color: getNodeColor('skill'),
+    metadata: {
+      triggers: [
+        { condition: 'コードの品質向上が必要な時' },
+        { condition: '重複コードを統合したい時' },
+        { condition: '関数やクラスを分割・整理したい時' },
+      ],
+      relatedSkills: ['test-driven-development', 'code-review'],
+      relatedAgents: ['code-reviewer'],
+      examples: [
+        {
+          title: 'ユーザー入力例',
+          content: '「このコードをリファクタリングして」\n→ 自動的にスキルが発動',
+          type: 'text',
+        },
+      ],
+      keyPoints: [
+        'テストを先に書いてから変更',
+        '小さな変更を積み重ねる',
+        '動作を変えずに構造を改善',
+      ],
+    },
   },
   {
     id: '~/.claude/agents/code-review.md',
@@ -77,6 +98,27 @@ export const DEMO_NODES: GraphNode[] = [
     path: '~/.claude/agents/code-review.md',
     description: 'コードレビューエージェント',
     color: getNodeColor('subagent'),
+    metadata: {
+      triggers: [
+        { condition: 'プルリクエストのレビューが必要な時' },
+        { condition: 'コードの品質チェックを行いたい時' },
+        { condition: '実装完了後のレビューを依頼された時' },
+      ],
+      relatedSkills: ['refactor', 'verification-before-completion'],
+      relatedAgents: ['debugger', 'test-automator'],
+      examples: [
+        {
+          title: 'ユーザー入力例',
+          content: '「このPRをレビューして」\n→ コードレビューエージェントが起動',
+          type: 'text',
+        },
+      ],
+      keyPoints: [
+        'セキュリティの観点からチェック',
+        'コーディング規約の遵守確認',
+        'パフォーマンスへの影響を評価',
+      ],
+    },
   },
 ]
 

@@ -491,6 +491,37 @@ export function extractTriggers(content: string): TriggerInfo[] {
     }
   }
 
+  // "When invoked:" セクションから発動条件を抽出
+  const whenInvokedMatch = content.match(/When invoked:\s*\n([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i)
+  if (whenInvokedMatch && triggers.length === 0) {
+    const section = whenInvokedMatch[1]
+    // 番号付きリストを抽出
+    const listItems = section.match(/^\d+\.\s+(.+)$/gm)
+    if (listItems) {
+      for (const item of listItems.slice(0, 3)) { // 最大3つまで
+        const text = item.replace(/^\d+\.\s+/, '').trim()
+        if (text) {
+          triggers.push({ condition: text })
+        }
+      }
+    }
+  }
+
+  // descriptionが専門性の説明の場合（"Expert", "Senior", "Specialist"などで始まる場合）
+  if (triggers.length === 0 && description) {
+    const isExpertDescription = /^(expert|senior|specialist|professional|advanced|master)/i.test(description)
+    if (isExpertDescription) {
+      // 説明文から主な機能を抽出
+      const specializesMatch = description.match(/specializes?\s+in\s+([^.]+)/i)
+      if (specializesMatch) {
+        triggers.push({ condition: `${specializesMatch[1].trim()}が必要な時` })
+      } else {
+        // 全体の説明を使用
+        triggers.push({ condition: description })
+      }
+    }
+  }
+
   // frontmatterがなく、タイトルがある場合はタイトルを使用目的として追加
   if (triggers.length === 0 && title && !content.match(/^---\s*\n/)) {
     triggers.push({ condition: title })
@@ -507,12 +538,9 @@ export function extractTriggers(content: string): TriggerInfo[] {
  */
 export function extractAgentExamples(content: string): ExampleInfo[] {
   const examples: ExampleInfo[] = []
-  const description = extractDescription(content)
 
-  if (!description) return examples
-
-  // <example>タグから使用例を抽出
-  const exampleMatches = description.matchAll(/<example>([\s\S]*?)<\/example>/gi)
+  // <example>タグから使用例を抽出（本文全体を検索）
+  const exampleMatches = content.matchAll(/<example>([\s\S]*?)<\/example>/gi)
   for (const match of exampleMatches) {
     const exampleContent = match[1]
 
@@ -589,6 +617,34 @@ export function extractRelatedAgents(content: string): string[] {
   const taskMatches = content.matchAll(/Task.*?(?:subagent_type|agent)[=:]\s*["']?([A-Za-z][A-Za-z0-9-]*)["']?/gi)
   for (const match of taskMatches) {
     agents.add(match[1].toLowerCase())
+  }
+
+  // "Integration with other agents:" セクションから抽出
+  const integrationMatch = content.match(/Integration with other agents:\s*\n([\s\S]*?)(?=\n\n##|\n\n\*\*|$)/i)
+  if (integrationMatch) {
+    // "- Collaborate with agent-name" や "- Work with agent-name" パターン
+    const listItems = integrationMatch[1].matchAll(/[-*]\s+(?:Collaborate|Work|Integrate|Coordinate|Partner)\s+with\s+([a-z][a-z0-9-]*)/gi)
+    for (const match of listItems) {
+      agents.add(match[1].toLowerCase())
+    }
+    // "- agent-name for..." パターン
+    const directItems = integrationMatch[1].matchAll(/[-*]\s+([a-z][a-z0-9-]+(?:-[a-z0-9]+)*)\s+(?:for|to|when|on)\s/gi)
+    for (const match of directItems) {
+      // 一般的な単語を除外
+      const name = match[1].toLowerCase()
+      if (!['use', 'call', 'run', 'see', 'the', 'this', 'that'].includes(name)) {
+        agents.add(name)
+      }
+    }
+  }
+
+  // "Related agents:" セクションから抽出
+  const relatedMatch = content.match(/Related agents?:\s*\n([\s\S]*?)(?=\n\n##|\n\n\*\*|$)/i)
+  if (relatedMatch) {
+    const listItems = relatedMatch[1].matchAll(/[-*]\s+\*?\*?([a-z][a-z0-9-]*(?:-[a-z0-9]+)*)\*?\*?/gi)
+    for (const match of listItems) {
+      agents.add(match[1].toLowerCase())
+    }
   }
 
   return Array.from(agents)
