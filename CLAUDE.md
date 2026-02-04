@@ -128,40 +128,51 @@ npx tsc --noEmit     # TypeScriptチェック
 #### 設計ドキュメント:
 - `docs/plans/2026-02-04-terminal-integration-design.md`
 
-### 未解決の問題（次セッションで対応必要）
-**Claudeボタンを押してもClaude Codeが起動しない**
+### 今回のセッションで修正した問題
+**Claudeボタンを押してもClaude Codeが起動しない問題**
 
-#### 調査・修正済みの内容:
-1. コマンド名の不一致修正 (`write_to_terminal` → `write_terminal`)
-2. セッションID管理の追加（spawn_terminalの戻り値を保存）
-3. TerminalPanelをforwardRefに変更してref接続を修正
+#### 根本原因:
+タイミング問題 - `spawn_terminal`呼び出し中にRustからイベントが発火されるが、
+セッションIDがまだフロントエンドに設定されていないため、イベントが無視されていた。
 
-#### デバッグのヒント:
-- Rust側のログ: `[INFO] Spawning terminal...` が出力されているか確認
-- ブラウザ開発者ツールでコンソールエラーを確認
-- `useTerminal`の`onOutput`コールバックが呼ばれているか確認
-- Tauriイベント `terminal:output` が正しく発火しているか確認
+#### 修正内容:
+1. **セッションIDのタイミング問題を修正** (`useTerminal.ts`)
+   - `pendingSessionIdRef`と`isSpawningRef`を追加
+   - `isAllowedSession`関数で起動中のセッションからのイベントを許可
+   - 最初のイベント受信時にpendingSessionIdRefを自動設定
 
-#### 確認すべきポイント:
-1. `spawn_terminal`が実際に呼ばれているか
-2. PTYが正常に起動しているか（Rust側のログ確認）
-3. イベントリスナーが正しく設定されているか
-4. セッションIDのマッチングが正しいか
-5. xterm.jsへのwrite呼び出しが成功しているか
+2. **パネル自動オープン** (`App.tsx`)
+   - `handleExecuteTerminalCommand`でコマンド実行前にパネルを開く
+   - TerminalViewがマウントされるまで待機してからspawn
+
+3. **デバッグログの追加**
+   - フロー追跡用のconsole.logを各ポイントに追加
 
 ### 直近コミット
 ```
+67aacaf fix: ターミナルセッションIDのタイミング問題を修正
 ca3a86d fix: TerminalPanelにforwardRefを追加しref接続を修正
 aff70cf fix: ターミナルのセッションID管理を修正
 1d9fbe2 fix: ターミナルパネルのレイアウトを右寄せに変更
 1108a61 feat: ターミナル統合機能を追加
 ```
 
+### 動作確認手順
+1. アプリを起動 (`npm run tauri dev`)
+2. 画面下部の「ターミナル」をクリックしてパネルを開く
+3. 「Claude」ボタンをクリック
+4. ブラウザの開発者ツールでコンソールログを確認:
+   - `[App] handleExecuteTerminalCommand called`
+   - `[useTerminal] Starting spawn`
+   - `[useTerminal] spawn_terminal returned`
+   - `[useTerminal] isAllowedSession check` (allowed状態になること)
+   - `[App] onOutput received`
+
 ### 開発環境の状態
-- 開発サーバー: ポート1420
+- 開発サーバー: ポート1420で動作中
 - Git: mainブランチ、複数コミットpush待ち
 
 ## 既知の問題・TODO
-- **ターミナル統合機能が動作しない**（優先度: 高）
+- **ターミナル統合機能** - 修正済み、テスト待ち
 - プレビュー専用ウィンドウ（延期中）
 - カスタムテンプレート追加（延期中）
