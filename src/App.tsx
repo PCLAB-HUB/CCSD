@@ -33,7 +33,7 @@ import Header from './components/layout/Header'
 import MainArea from './components/layout/MainArea'
 import Sidebar from './components/layout/Sidebar'
 import { StatsPanel } from './components/stats'
-import { TerminalPanel } from './components/terminal'
+import { TerminalPanel, type TerminalPanelHandle } from './components/terminal'
 
 // 遅延読み込み - モーダルコンポーネントは初期表示に不要
 const AIReviewPanel = lazy(() => import('./components/aiReview/AIReviewPanel'))
@@ -290,8 +290,8 @@ function App() {
     setActiveTab: setTerminalActiveTab,
   } = useTerminalPanel()
 
-  // ターミナルViewへの参照
-  const terminalViewRef = useRef<{ write: (data: string) => void; clear: () => void } | null>(null)
+  // ターミナルパネルへの参照
+  const terminalPanelRef = useRef<TerminalPanelHandle>(null)
 
   // ターミナルPTY接続
   const {
@@ -304,7 +304,7 @@ function App() {
     handleXtermData,
   } = useTerminal({
     onOutput: (data) => {
-      terminalViewRef.current?.write(data)
+      terminalPanelRef.current?.write(data)
     },
     onError: (message) => {
       showError(`ターミナルエラー: ${message}`)
@@ -544,7 +544,7 @@ function App() {
    * ターミナルクリア
    */
   const handleTerminalClear = useCallback(() => {
-    terminalViewRef.current?.clear()
+    terminalPanelRef.current?.clear()
     clearTerminalOutput()
   }, [clearTerminalOutput])
 
@@ -731,6 +731,7 @@ function App() {
 
           {/* ターミナルパネル（MainAreaの下に配置） */}
           <TerminalPanel
+            ref={terminalPanelRef}
             isOpen={isTerminalOpen}
             onToggle={toggleTerminal}
             activeTab={terminalActiveTab}

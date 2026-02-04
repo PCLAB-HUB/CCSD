@@ -3,7 +3,7 @@
  *
  * ターミナル機能のUIコンポーネント群
  */
-export { default as TerminalPanel } from './TerminalPanel'
+export { default as TerminalPanel, type TerminalPanelHandle } from './TerminalPanel'
 export { default as TerminalTabs } from './TerminalTabs'
 export { default as TerminalToolbar } from './TerminalToolbar'
 export { default as TerminalView, type TerminalViewHandle } from './TerminalView'

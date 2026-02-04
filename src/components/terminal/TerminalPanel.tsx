@@ -1,10 +1,11 @@
 import {
+  forwardRef,
   memo,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
-  type FC,
 } from 'react'
 
 import Icon from '../common/Icon'
@@ -67,14 +68,28 @@ interface TerminalPanelProps {
 }
 
 /**
+ * TerminalPanelのハンドル（外部から操作可能）
+ */
+export interface TerminalPanelHandle {
+  /** ターミナルにテキストを書き込む */
+  write: (data: string) => void
+  /** ターミナルをクリア */
+  clear: () => void
+  /** ターミナルにフォーカス */
+  focus: () => void
+  /** ターミナルをリサイズ */
+  fit: () => void
+}
+
+/**
  * ターミナルパネル
  *
- * - 下部に配置、中央揃え（max-width: 900px、左右に余白）
+ * - 下部に配置
  * - 折りたたみ可能（クリックで開閉）
  * - 上辺ドラッグでリサイズ可能
  * - タブバー + コンテンツ領域
  */
-const TerminalPanel: FC<TerminalPanelProps> = memo(({
+const TerminalPanel = memo(forwardRef<TerminalPanelHandle, TerminalPanelProps>(({
   isOpen,
   onToggle,
   activeTab,
@@ -93,12 +108,28 @@ const TerminalPanel: FC<TerminalPanelProps> = memo(({
   onTerminalData,
   onTerminalResize,
   className = '',
-}) => {
+}, ref) => {
   const terminalRef = useRef<TerminalViewHandle>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const dragStartY = useRef(0)
   const dragStartHeight = useRef(height)
+
+  // 外部からアクセス可能なハンドルを公開
+  useImperativeHandle(ref, () => ({
+    write: (data: string) => {
+      terminalRef.current?.write(data)
+    },
+    clear: () => {
+      terminalRef.current?.clear()
+    },
+    focus: () => {
+      terminalRef.current?.focus()
+    },
+    fit: () => {
+      terminalRef.current?.fit()
+    },
+  }), [])
 
   // ローカルストレージから高さを復元
   useEffect(() => {
@@ -276,7 +307,7 @@ const TerminalPanel: FC<TerminalPanelProps> = memo(({
       )}
     </div>
   )
-})
+}))
 
 TerminalPanel.displayName = 'TerminalPanel'
 
