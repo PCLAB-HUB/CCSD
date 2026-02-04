@@ -1,10 +1,12 @@
-import { memo, useCallback, useId, useMemo } from 'react'
+import { memo, useCallback, useId, useMemo, useState } from 'react'
 
 import { Icon } from '../common'
 import { StatCard, type StatIconVariant } from './StatCard'
+import { StatsDetailModal } from './StatsDetailModal'
 import { StatsMetaInfo } from './StatsMetaInfo'
 
-import type { Stats } from '../../types/stats'
+import { useStatsDetail } from '../../hooks/useStatsDetail'
+import type { Stats, StatsDetailType } from '../../types/stats'
 
 /**
  * 統計データの型定義（配列形式で渡す場合用）
@@ -46,8 +48,13 @@ interface StatsPanelProps {
 /**
  * Stats型からStatItem配列に変換するヘルパー関数
  * 各項目にユニークなアイコンを割り当て
+ * @param stats 統計データ
+ * @param onStatClick 統計項目クリック時のコールバック
  */
-function convertStatsToItems(stats: Stats): StatItem[] {
+function convertStatsToItems(
+  stats: Stats,
+  onStatClick?: (type: StatsDetailType) => void
+): StatItem[] {
   return [
     {
       key: 'subAgents',
@@ -55,6 +62,7 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       value: stats.subAgentCount,
       unit: '個',
       iconVariant: 'agents' as StatIconVariant,  // ロボットアイコン（青）
+      onClick: onStatClick ? () => onStatClick('subAgents') : undefined,
     },
     {
       key: 'categories',
@@ -62,6 +70,7 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       value: stats.categoryCount,
       unit: '個',
       iconVariant: 'categories' as StatIconVariant,  // グリッドアイコン（緑）
+      onClick: onStatClick ? () => onStatClick('categories') : undefined,
     },
     {
       key: 'skills',
@@ -69,6 +78,7 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       value: stats.skillCount,
       unit: '個',
       iconVariant: 'skills' as StatIconVariant,  // 稲妻アイコン（黄）
+      onClick: onStatClick ? () => onStatClick('skills') : undefined,
     },
     {
       key: 'mcpServers',
@@ -76,6 +86,7 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       value: stats.mcpServerCount,
       unit: '個',
       iconVariant: 'servers' as StatIconVariant,  // サーバーアイコン（紫）
+      onClick: onStatClick ? () => onStatClick('mcpServers') : undefined,
     },
     {
       key: 'plugins',
@@ -83,6 +94,7 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       value: stats.pluginCount,
       unit: '個',
       iconVariant: 'plugins' as StatIconVariant,  // パズルアイコン（ピンク）
+      onClick: onStatClick ? () => onStatClick('plugins') : undefined,
     },
     {
       key: 'backups',
@@ -90,6 +102,7 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       value: stats.backupCount,
       unit: '個',
       iconVariant: 'backups' as StatIconVariant,  // クラウドアイコン（シアン）
+      onClick: onStatClick ? () => onStatClick('backups') : undefined,
     },
     {
       key: 'totalFiles',
@@ -97,6 +110,7 @@ function convertStatsToItems(stats: Stats): StatItem[] {
       value: stats.totalFileCount,
       unit: '個',
       iconVariant: 'files' as StatIconVariant,  // ファイルスタックアイコン（オレンジ）
+      onClick: onStatClick ? () => onStatClick('totalFiles') : undefined,
     },
   ]
 }
@@ -129,11 +143,41 @@ export const StatsPanel = memo<StatsPanelProps>(({
   loading = false,
   className = '',
 }) => {
+  // モーダル状態管理
+  const [selectedDetailType, setSelectedDetailType] = useState<StatsDetailType | null>(null)
+
+  // 統計詳細フック
+  const {
+    detail,
+    loading: detailLoading,
+    error: detailError,
+    fetchDetail,
+    clearDetail,
+  } = useStatsDetail()
+
+  // 統計項目クリックハンドラ
+  const handleStatClick = useCallback(async (type: StatsDetailType) => {
+    setSelectedDetailType(type)
+    await fetchDetail(type)
+  }, [fetchDetail])
+
+  // モーダルを閉じるハンドラ
+  const handleCloseDetail = useCallback(() => {
+    setSelectedDetailType(null)
+    clearDetail()
+  }, [clearDetail])
+
+  // アイテムクリックハンドラ（将来的にファイルを開く処理を追加）
+  const handleItemClick = useCallback((item: { id: string; name: string; path?: string }) => {
+    console.log('Item clicked:', item)
+    // TODO: ファイルを開く処理を実装
+  }, [])
+
   // Stats型の場合は変換、配列の場合はそのまま使用
   const { statItems, lastUpdated } = useMemo(() => {
     if (isStatsType(stats)) {
       return {
-        statItems: convertStatsToItems(stats),
+        statItems: convertStatsToItems(stats, handleStatClick),
         lastUpdated: stats.lastUpdated ?? propLastUpdated,
       }
     }
@@ -141,7 +185,7 @@ export const StatsPanel = memo<StatsPanelProps>(({
       statItems: stats,
       lastUpdated: propLastUpdated,
     }
-  }, [stats, propLastUpdated])
+  }, [stats, propLastUpdated, handleStatClick])
 
   // 折りたたみ機能が有効かどうか
   const collapsible = !!onToggleCollapse
@@ -263,6 +307,17 @@ export const StatsPanel = memo<StatsPanelProps>(({
           )}
         </div>
       </div>
+
+      {/* 統計詳細モーダル */}
+      <StatsDetailModal
+        isOpen={selectedDetailType !== null}
+        onClose={handleCloseDetail}
+        detailType={selectedDetailType}
+        detail={detail}
+        loading={detailLoading}
+        error={detailError}
+        onItemClick={handleItemClick}
+      />
     </section>
   )
 })
