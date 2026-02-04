@@ -38,7 +38,16 @@ export type {
 export { isCustomTemplate } from './templates'
 
 // 統計関連
-export type { Stats, StatCardData, StatsPanelState } from './stats'
+export type {
+  Stats,
+  StatCardData,
+  StatsPanelState,
+  StatsDetailItem,
+  StatsDetailType,
+  StatsDetail,
+  StatsTypeInfo,
+} from './stats'
+export { STATS_TYPE_INFO } from './stats'
 
 // タブエディタ関連（現行版 + 拡張版）
 export type {
