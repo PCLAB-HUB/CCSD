@@ -8,6 +8,7 @@ export { default as TerminalTabs } from './TerminalTabs'
 export { default as TerminalToolbar } from './TerminalToolbar'
 export { default as TerminalView, type TerminalViewHandle } from './TerminalView'
 export { default as QuickCommands } from './QuickCommands'
+export { default as AddCommandDialog } from './AddCommandDialog'
 
 // 定数の再エクスポート
 export {

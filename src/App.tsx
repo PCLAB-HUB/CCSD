@@ -33,7 +33,7 @@ import Header from './components/layout/Header'
 import MainArea from './components/layout/MainArea'
 import Sidebar from './components/layout/Sidebar'
 import { StatsPanel } from './components/stats'
-import { TerminalPanel, type TerminalPanelHandle } from './components/terminal'
+import { TerminalPanel, AddCommandDialog, type TerminalPanelHandle } from './components/terminal'
 
 // 遅延読み込み - モーダルコンポーネントは初期表示に不要
 const AIReviewPanel = lazy(() => import('./components/aiReview/AIReviewPanel'))
@@ -92,6 +92,9 @@ function App() {
 
   // 依存関係グラフの表示状態
   const [showDependencyGraph, setShowDependencyGraph] = useState(false)
+
+  // カスタムコマンド追加ダイアログの表示状態
+  const [showAddCommandDialog, setShowAddCommandDialog] = useState(false)
 
   // UI状態管理
   const {
@@ -570,15 +573,18 @@ function App() {
   }, [clearTerminalOutput])
 
   /**
-   * クイックコマンド追加（簡易版）
+   * クイックコマンド追加ダイアログを開く
    */
-  const handleAddQuickCommand = useCallback(() => {
-    const label = prompt('コマンドラベル:')
-    if (!label) return
-    const command = prompt('実行コマンド:')
-    if (!command) return
-    addQuickCommand({ label, command })
-  }, [addQuickCommand])
+  const handleOpenAddCommandDialog = useCallback(() => {
+    setShowAddCommandDialog(true)
+  }, [])
+
+  /**
+   * クイックコマンド追加ダイアログを閉じる
+   */
+  const handleCloseAddCommandDialog = useCallback(() => {
+    setShowAddCommandDialog(false)
+  }, [])
 
   // ========================================
   // 派生状態
@@ -764,7 +770,7 @@ function App() {
             commandHistory={commandHistory}
             currentFilePath={selectedFile?.path}
             onExecuteCommand={handleExecuteTerminalCommand}
-            onAddQuickCommand={handleAddQuickCommand}
+            onAddQuickCommand={handleOpenAddCommandDialog}
             onRemoveQuickCommand={removeQuickCommand}
             onClear={handleTerminalClear}
             onTerminalData={handleTerminalData}
@@ -843,6 +849,13 @@ function App() {
           </div>
         )}
       </Suspense>
+
+      {/* カスタムコマンド追加ダイアログ */}
+      <AddCommandDialog
+        isOpen={showAddCommandDialog}
+        onClose={handleCloseAddCommandDialog}
+        onAdd={addQuickCommand}
+      />
     </div>
   )
 }
