@@ -28,6 +28,12 @@ Claude Codeの設定ファイル（CLAUDE.md、スキル、エージェント等
 - **日本語翻訳**: 英語の発動条件をパターンマッチで自動翻訳
 - **ウェブ翻訳**: 翻訳しきれない英文はGoogle翻訳で確認可能
 
+### Claude Code情報
+- **バージョン表示**: インストールされているClaude Codeのバージョンをヘッダーに表示
+- **人気リポジトリ**: GitHub上のClaude Code関連リポジトリ（スター数上位10件）を折りたたみパネルで表示
+  - sessionStorageでキャッシュ（30分有効）
+  - レート制限対策済み
+
 ### その他
 - **ダークモード**: ライト/ダーク切り替え
 - **AIレビュー**: Claude APIによるコードレビュー（オプション）
@@ -83,9 +89,10 @@ ClaudeSettingDashBoard/
 ├── src/                         # フロントエンド (React)
 │   ├── App.tsx                  # ルートコンポーネント
 │   ├── components/
-│   │   ├── layout/              # Header, MainArea, Sidebar, StatusBar
+│   │   ├── layout/              # Header, MainArea, Sidebar, ClaudeVersionBadge
 │   │   ├── editor/              # Monaco Editor関連
 │   │   ├── graph/               # 依存関係グラフ
+│   │   ├── github/              # GitHubリポジトリパネル
 │   │   ├── search/              # 検索＆置換パネル
 │   │   ├── tabs/                # タブエディタUI
 │   │   └── tree/                # ファイルツリー
@@ -98,7 +105,7 @@ ClaudeSettingDashBoard/
 ├── src-tauri/                   # バックエンド (Rust)
 │   ├── src/
 │   │   ├── lib.rs               # エントリーポイント
-│   │   ├── commands/            # Tauriコマンド
+│   │   ├── commands/            # Tauriコマンド（files, backup, version等）
 │   │   ├── types.rs             # 型定義
 │   │   └── error.rs             # エラー型
 │   ├── capabilities/            # 権限設定
